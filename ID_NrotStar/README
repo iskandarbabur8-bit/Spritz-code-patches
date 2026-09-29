@@ -1,0 +1,33 @@
+Cactus Code Thorn ID_NrotStar
+Author(s)    : Lorenzo Sala <l.sala38@campus.unimib.it>
+Maintainer(s): Lorenzo Sala <l.sala38@campus.unimib.it>
+Licence      : GPL
+--------------------------------------------------------------------------
+
+1. Purpose
+
+Import LORENE uniformly rotating neutron star initial data, produced by nrotstar, with arbitrary Equation Of State provided as CompOSE tables. This thorn is adapted to work with EoS slices produced by the python routine 'SlicerAndConverter', using data produced by nrotstar, as described later. It would be desirable to use Spritz_SetBeta to set up T, Ye and eps.
+
+
+2. How to use it
+
+NB) Here is described in detail everything you should do manually. DO NOT WORRY ABOUT THAT, if you run the scripts using easyrun.py, it will print out what you have to write in parfile.
+1)  First of all, you need to produce a slice of the EoS table. The eos table is needed to be in stellarcollapse format, i.e. in the .h5 format used by EOS_Omni. You can choose between a temperature slice or an entropy slice, the thorn will automatically detected which one you have chosen. The commands
+      python H5_temperatureslice RelativePathToEos
+      python H5_entropyslice RelativePathToEos
+    will guide you through the generation of the CompOSE files, that will be put in ../EosName.
+2)  Now you have to use this slice to generate initial data with nrotstar. Go to the nrotstar folder, write into par_eos.d the path to the previously generated folder EosName, followed by /eos. For example, [...]/EosName/eos
+3)  In parfile, you need to set some parameters:
+    ID_NrotStar::filename            = [Path to resu.d produced by nrotstar]
+    EOS_Omni::nuceos_table_name      = [Path to .h5 eos in stellarcollapse format]
+    HydroBase::initial_hydro         = "ID_NrotStar"
+    ADMBase::initial_data            = "ID_NrotStar"
+    ADMBase::initial_lapse           = "ID_NrotStar"
+    ADMBase::initial_shift           = "ID_NrotStar"
+    ADMBase::initial_dtlapse         = "ID_NrotStar"
+    ADMBase::initial_dtshift         = "ID_NrotStar"
+    HydroBase::initial_Bvec          = "ID_NrotStar"
+    HydroBase::initial_temperature   = "Spritz_SetBeta"
+    HydroBase::initial_Y_e           = "Spritz_SetBeta"
+    HydroBase::initial_entropy       = "Spritz_SetBeta"
+    Spritz_SetBeta::beta_datafile    = [Path to EoS slice, e.g. [...]/EosName/eos]

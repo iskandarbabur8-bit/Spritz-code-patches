@@ -1,0 +1,17 @@
+# Main make.code.defn file for thorn Spritz_InitData
+# $Header$
+
+# Source files in this directory
+SRCS = 	Spritz_ShockTube.F90 \
+        Spritz_2DTests_MHD.F90 \
+        Spritz_3DTests_MHD.F90 \
+        Spritz_BHevoMHD.F90 \
+	Spritz_Maxpress.cc \
+	Spritz_TOVMHD.F90 \
+	Spritz_BNSMHD.F90 \
+	Spritz_SimpleWave.F90 \
+	Spritz_Initialize_psi.F90
+
+# Subdirectories containing source files
+SUBDIRS = 
+

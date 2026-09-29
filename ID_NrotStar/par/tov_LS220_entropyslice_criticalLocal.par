@@ -1,0 +1,577 @@
+# Parameter file for a static TOV star.
+# Initial data are set up using LORENE-nrotstar,
+# with no magnetic field and no rotation.
+
+ActiveThorns = "Time MoL"
+ActiveThorns = "Coordbase CartGrid3d Boundary StaticConformal"
+ActiveThorns = "SymBase ADMBase TmunuBase HydroBase InitBase ADMCoupling ADMMacros"
+ActiveThorns = "IOUtil"
+ActiveThorns = "Formaline"
+ActiveThorns = "SpaceMask CoordGauge Constants LocalReduce aeilocalinterp LoopControl"
+ActiveThorns = "Carpet CarpetLib CarpetReduce CarpetRegrid2 CarpetInterp"
+ActiveThorns = "CarpetIOASCII CarpetIOScalar CarpetIOHDF5 CarpetIOBasic"
+ActiveThorns = "ID_NrotStar EOS_Omni GRHydro"
+
+# Finalize
+Cactus::terminate           = "time"
+Cactus::cctk_final_time     = 200 # divide by ~203 to get ms
+# Cactus::cctk_itlast        = 1024
+
+# Termination Trigger
+ActiveThorns = "TerminationTrigger"
+TerminationTrigger::max_walltime = 24          # hours
+TerminationTrigger::on_remaining_walltime = 30 # minutes
+TerminationTrigger::check_file_every = 64
+TerminationTrigger::termination_file = "TerminationTrigger.txt"
+TerminationTrigger::termination_from_file   = "yes"
+TerminationTrigger::create_termination_file = "yes"
+
+# grid parameters
+Carpet::domain_from_coordbase = "yes"
+CartGrid3D::type         = "coordbase"
+CartGrid3D::domain       = "full"
+CartGrid3D::avoid_origin = "no"
+CoordBase::xmin = 0.0
+CoordBase::ymin = 0.0
+CoordBase::zmin = 0.0
+CoordBase::xmax = 9.0
+CoordBase::ymax = 9.0
+CoordBase::zmax = 9.0
+CoordBase::dx   =   0.2
+CoordBase::dy   =   0.2
+CoordBase::dz   =   0.2
+
+CarpetRegrid2::regrid_every =   0
+CarpetRegrid2::num_centres  =   1
+CarpetRegrid2::position_x_1 = 0.0
+CarpetRegrid2::position_y_1 = 0.0
+CarpetRegrid2::position_z_1 = 0.0
+CarpetRegrid2::num_levels_1 = 1
+# CarpetRegrid2::radius_1[1]  = 8.0  #0.8
+# CarpetRegrid2::radius_1[2]  = 16.0  #0.4
+# CarpetRegrid2::radius_1[3]  = 8.0   #0.2
+CarpetRegrid2::veryverbose = yes
+
+
+CoordBase::boundary_size_x_lower        = 3
+CoordBase::boundary_size_y_lower        = 3
+CoordBase::boundary_size_z_lower        = 3
+CoordBase::boundary_size_x_upper        = 3
+CoordBase::boundary_size_y_upper        = 3
+CoordBase::boundary_size_z_upper        = 3
+
+#commenta questi se non metti la simmetria su x e y
+CoordBase::boundary_shiftout_x_lower    = 1
+CoordBase::boundary_shiftout_y_lower    = 1
+CoordBase::boundary_shiftout_x_upper    = 0
+CoordBase::boundary_shiftout_y_upper    = 0
+CoordBase::boundary_shiftout_z_upper    = 0
+
+#e questo se non metti simmetria su z
+CoordBase::boundary_shiftout_z_lower    = 1
+
+ActiveThorns = "ReflectionSymmetry"
+ReflectionSymmetry::reflection_x = "yes" ##
+ReflectionSymmetry::reflection_y = "yes" ##
+ReflectionSymmetry::reflection_z = "yes"
+ReflectionSymmetry::avoid_origin_x = "no"
+ReflectionSymmetry::avoid_origin_y = "no"
+ReflectionSymmetry::avoid_origin_z = "no"
+
+# storage and coupling
+TmunuBase::stress_energy_storage = yes
+TmunuBase::stress_energy_at_RHS  = yes
+TmunuBase::timelevels            =  1
+TmunuBase::prolongation_type     = none
+
+
+HydroBase::timelevels            = 3
+
+ADMMacros::spatial_order = 4
+
+SpaceMask::use_mask      = yes
+
+Carpet::enable_all_storage       = no
+Carpet::use_buffer_zones         = "yes"
+
+Carpet::poison_new_timelevels    = "yes"
+Carpet::check_for_poison         = "no"
+
+Carpet::init_3_timelevels        = no
+Carpet::init_fill_timelevels     = "yes"
+
+CarpetLib::poison_new_memory = "yes"
+CarpetLib::poison_value      = 114
+
+# system specific Carpet paramters
+Carpet::max_refinement_levels    = 1
+driver::ghost_size               = 3
+Carpet::prolongation_order_space = 3
+Carpet::prolongation_order_time  = 2
+
+# Time integration
+time::dtfac = 0.30
+
+MoL::ODE_Method             = "rk4"
+MoL::MoL_Intermediate_Steps = 4
+MoL::MoL_Num_Scratch_Levels = 1
+
+# check all physical variables for NaNs
+#  This can save you computing time, so it's not a bad idea to do this
+#  once in a whioe.
+ActiveThorns = "NaNChecker"
+NaNChecker::check_every = 32
+NaNChecker::action_if_found = "terminate" #"terminate", "just warn", "abort"
+NaNChecker::check_vars = "ADMBase::metric ADMBase::lapse ADMBase::shift HydroBase::rho HydroBase::eps HydroBase::press HydroBase::vel"
+
+# Hydro paramters
+
+# init parameters
+InitBase::initial_data_setup_method = "init_some_levels"
+
+HydroBase::initial_hydro         = "ID_NrotStar"
+ADMBase::initial_data            = "ID_NrotStar"
+ADMBase::initial_lapse           = "ID_NrotStar"
+ADMBase::initial_shift           = "ID_NrotStar"
+ADMBase::initial_dtlapse         = "ID_NrotStar"
+ADMBase::initial_dtshift         = "ID_NrotStar"
+HydroBase::initial_Bvec          = "ID_NrotStar"
+
+ID_NrotStar::filename            = "/mnt/sdb3/NumRel/Lorene/Codes/Nrotstar/LS_sfhoBL_sliceent_critical/resu.d"
+ID_NrotStar::beta_datafile       = "/mnt/sdb3/NumRel/EquationOfState/compOSEtables/sfhoBL_entropyslice1/eos"
+
+# Set equation of state for evolution
+GRHydro::EoS_Change				         =	"no"
+EOS_Omni::nuceos_read_table = yes
+EOS_Omni::do_energy_shift = yes
+EOS_Omni::nuceos_table_name = "/mnt/sdb3/NumRel/EquationOfState/LS220_234r_136t_50y_analmu_20091212_SVNr26.h5"
+
+#*********************
+HydroBase::initial_temperature   = "ID_NrotStar_BetaEq"
+HydroBase::initial_Y_e           = "ID_NrotStar_BetaEq"
+HydroBase::initial_entropy       = "ID_NrotStar_BetaEq"
+hydrobase::Y_e_evolution_method                  = "GRHydro"
+hydrobase::temperature_evolution_method          = "GRHydro"
+# hydrobase::entropy_evolution_method          = "GRHydro"
+GRHydro::GRHydro_c2p_warnlevel 			             = 1
+GRHydro::GRHydro_c2p_warn_from_reflevel		       = 2
+# GRHydro::GRHydro_perc_ptol                       = 1.e-11  # Tolerance for primitive variable solve (percent)
+grhydro::grhydro_eos_rf_prec                     = 1.0e-10  # Precision to which root finding should be carried out
+# grhydro::grhydro_eos_hot_eps_fix                 = yes      # This locally injects heat to prevent failure.
+grhydro::c2p_resort_to_bisection                 = yes # If the pressure guess is unphysical, try with bisection (slower but robust)
+# GRHydro::GRHydro_MaxNumEvolvedVars               = 6
+# GRHydro::GRHydro_MaxNumEvolvedVarsSlow           = 6
+grhydro::grhydro_hot_atmo_temp                   = 0.01
+grhydro::GRHydro_max_temp                        = 250
+# grhydro::grhydro_hot_atmo_Y_e                    = 0.40
+grhydro::grhydro_y_e_min                         = 0.035
+grhydro::grhydro_y_e_max                         = 0.55
+#*********************
+
+
+
+
+################################################################################
+################################################################################
+# Horizon finding
+################################################################################
+################################################################################
+
+
+GRHydro::GRHydro_enable_internal_excision	= "yes"
+GRHydro::reconstruct_Wv = "yes"
+
+
+ActiveThorns	= "AHFinderDirect SetMask_SphericalSurface"
+SetMask_SphericalSurface::SetMask_SurfaceIndex[0] = 1
+SetMask_SphericalSurface::SetMask_RadiusFactor[0] = 0.6
+SphericalSurface::nsurfaces             = 6
+SphericalSurface::maxntheta             = 66
+SphericalSurface::maxnphi               = 124
+SphericalSurface::verbose               = no
+
+# Horizon 1
+SphericalSurface::ntheta            [0] = 41
+SphericalSurface::nphi              [0] = 80
+SphericalSurface::nghoststheta      [0] = 2
+SphericalSurface::nghostsphi        [0] = 2
+
+# Horizon 2
+SphericalSurface::ntheta            [1] = 41
+SphericalSurface::nphi              [1] = 80
+SphericalSurface::nghoststheta      [1] = 2
+SphericalSurface::nghostsphi        [1] = 2
+
+# Horizon 3
+SphericalSurface::ntheta            [2] = 41
+SphericalSurface::nphi              [2] = 80
+SphericalSurface::nghoststheta      [2] = 2
+SphericalSurface::nghostsphi        [2] = 2
+
+# Horizon 4
+SphericalSurface::ntheta            [3] = 41
+SphericalSurface::nphi              [3] = 80
+SphericalSurface::nghoststheta      [3] = 2
+SphericalSurface::nghostsphi        [3] = 2
+
+SphericalSurface::ntheta       [4] = 39
+SphericalSurface::nphi         [4] = 76
+SphericalSurface::nghoststheta [4] = 2
+SphericalSurface::nghostsphi   [4] = 2
+SphericalSurface::set_spherical[4] = yes
+SphericalSurface::radius       [4] = 4.
+
+SphericalSurface::ntheta       [5] = 39
+SphericalSurface::nphi         [5] = 76
+SphericalSurface::nghoststheta [5] = 2
+SphericalSurface::nghostsphi   [5] = 2
+SphericalSurface::set_spherical[5] = yes
+SphericalSurface::radius       [5] = 6.
+
+# AHFinderDirect relies on ADMBase to tell it how many
+# timelevels it needs
+admbase::metric_timelevels 				 = 3
+admbase::shift_timelevels 				 = 3
+admbase::lapse_timelevels 				 = 3
+AHFinderDirect::N_horizons                               = 4
+AHFinderDirect::find_every                               = 4
+AHFinderDirect::output_h_every                           = 0
+AHFinderDirect::max_Newton_iterations__initial           = 50
+AHFinderDirect::max_Newton_iterations__subsequent        = 50
+AHFinderDirect::max_allowable_Theta_growth_iterations    = 10
+AHFinderDirect::max_allowable_Theta_nonshrink_iterations = 10
+AHFinderDirect::geometry_interpolator_name               = "Lagrange polynomial interpolation"
+AHFinderDirect::geometry_interpolator_pars               = "order=4"
+AHFinderDirect::surface_interpolator_name                = "Lagrange polynomial interpolation"
+AHFinderDirect::surface_interpolator_pars                = "order=4"
+AHFinderDirect::verbose_level                            = "physics details"
+AHFinderDirect::move_origins                             = no
+
+# don't announce stuff
+AHFinderDirect::which_horizon_to_announce_centroid    = 0
+
+AHFinderDirect::run_at_CCTK_POST_RECOVER_VARIABLES = yes
+
+# AHFinderDirect starts counting at 1
+AHFinderDirect::origin_x                             [1] = 0
+AHFinderDirect::find_after_individual_time           [1] = 34.5
+AHFinderDirect::initial_guess__coord_sphere__x_center[1] = 0
+AHFinderDirect::initial_guess__coord_sphere__radius  [1] = 1.6
+AHFinderDirect::which_surface_to_store_info          [1] = 0
+#AHFinderDirect::set_mask_for_individual_horizon      [1] = no
+AHFinderDirect::reset_horizon_after_not_finding      [1] = no
+
+AHFinderDirect::origin_x                             [2] = 0
+AHFinderDirect::find_after_individual_time           [2] = 34.5
+AHFinderDirect::initial_guess__coord_sphere__x_center[2] = 0
+AHFinderDirect::initial_guess__coord_sphere__radius  [2] = 1.2
+AHFinderDirect::which_surface_to_store_info          [2] = 1
+#AHFinderDirect::set_mask_for_individual_horizon     [2] = no
+AHFinderDirect::reset_horizon_after_not_finding      [2] = no
+
+AHFinderDirect::origin_x                             [3] = 0
+AHFinderDirect::find_after_individual_time           [3] = 34.5
+AHFinderDirect::initial_guess__coord_sphere__x_center[3] = 0
+AHFinderDirect::initial_guess__coord_sphere__radius  [3] = 0.8
+AHFinderDirect::which_surface_to_store_info          [3] = 2
+#AHFinderDirect::set_mask_for_individual_horizon      [3] = no
+AHFinderDirect::reset_horizon_after_not_finding      [3] = no
+
+AHFinderDirect::origin_x                             [4] = 0
+AHFinderDirect::find_after_individual_time           [4] = 34.5
+AHFinderDirect::initial_guess__coord_sphere__x_center[4] = 0
+AHFinderDirect::initial_guess__coord_sphere__radius  [4] = 0.4
+AHFinderDirect::which_surface_to_store_info          [4] = 3
+#AHFinderDirect::set_mask_for_individual_horizon      [4] = no
+AHFinderDirect::reset_horizon_after_not_finding      [4] = no
+#****************************************************************************************************
+
+
+
+
+#************* AHFINDER STUFF *********************
+# ActiveThorns = " AHFinderDirect CarpetMask "
+ActiveThorns = " CarpetMask "
+
+#
+carpetmask::excluded_surface[0]          = 0
+carpetmask::excluded_surface[1]          = 1
+carpetmask::excluded_surface_factor[0]   = 1
+carpetmask::excluded_surface_factor[1]   = 1
+#
+# ahfinderdirect::find_after_individual_time[1] = 125
+# ahfinderdirect::find_after_individual_time[2] = 125
+#
+# ahfinderdirect::find_every               = 1 #number of iteration when all reflev are synchronized, i.e., 2^(N-1) where N is the maximum number of reflevel
+# ahfinderdirect::output_h_every           = 8
+#
+#
+# ahfinderdirect::geometry_interpolator_name = "Lagrange polynomial interpolation"
+# ahfinderdirect::geometry_interpolator_pars = "order=4"
+#
+# AHFinderDirect::run_at_CCTK_POST_RECOVER_VARIABLES = no
+#
+# ahfinderdirect::initial_guess__coord_sphere__radius[1] = 1
+# ahfinderdirect::initial_guess__coord_sphere__radius[2] = 3
+# ahfinderdirect::initial_guess__coord_sphere__x_center[1] = 0
+# ahfinderdirect::initial_guess__coord_sphere__x_center[2] = 0
+# ahfinderdirect::initial_guess__coord_sphere__y_center[1] = 0
+# ahfinderdirect::initial_guess__coord_sphere__z_center[1] = 0
+# ahfinderdirect::mask_buffer_thickness    = 0
+# ahfinderdirect::mask_radius_multiplier   = 0.6
+# ahfinderdirect::mask_radius_offset       = 0
+# ahfinderdirect::mask_is_noshrink	 = no
+# ahfinderdirect::max_allowable_horizon_radius[1] = 6
+# ahfinderdirect::max_allowable_horizon_radius[2] = 6
+# ahfinderdirect::max_allowable_theta_growth_iterations = 10
+# ahfinderdirect::max_allowable_theta_nonshrink_iterations = 10
+# ahfinderdirect::max_newton_iterations__initial = 50
+# ahfinderdirect::max_newton_iterations__subsequent = 50
+# ahfinderdirect::move_origins             = yes
+# ahfinderdirect::n_horizons               = 2
+# ahfinderdirect::new_style_mask_bitfield_name = "Hydro_Excision"
+# ahfinderdirect::new_style_mask_buffer_value = "normal"
+# ahfinderdirect::new_style_mask_inside_value = "excised"
+# ahfinderdirect::new_style_mask_outside_value = "normal"
+# ahfinderdirect::origin_x[1]              = 0
+# ahfinderdirect::origin_x[2]              = 0
+# ahfinderdirect::predict_origin_movement  = yes
+# ahfinderdirect::reset_horizon_after_not_finding[1] = no #yes
+# ahfinderdirect::reset_horizon_after_not_finding[2] = no #yes
+# ahfinderdirect::reshape_while_moving     = yes
+# ahfinderdirect::set_mask_for_all_horizons = no #yes
+# ahfinderdirect::set_new_style_mask       = no #yes
+# ahfinderdirect::set_old_style_mask       = no #yes
+# ahfinderdirect::surface_interpolator_name = "Lagrange polynomial interpolation"
+# ahfinderdirect::surface_interpolator_pars = "order=4"
+# ahfinderdirect::verbose_level            = "algorithm highlights" #"physics details"
+# ahfinderdirect::which_surface_to_store_info[1] = 0
+# ahfinderdirect::which_surface_to_store_info[2] = 1
+# ahfinderdirect::output_BH_diagnostics = yes
+#
+# sphericalsurface::nsurfaces              = 2
+# sphericalsurface::maxnphi                = 240
+# sphericalsurface::maxntheta              = 140
+# sphericalsurface::nghostsphi[0]          = 2
+# sphericalsurface::nghostsphi[1]          = 2
+# sphericalsurface::nghoststheta[0]        = 2
+# sphericalsurface::nghoststheta[1]        = 2
+# sphericalsurface::nphi[0]                = 96
+# sphericalsurface::nphi[1]                = 96
+# sphericalsurface::ntheta[0]              = 55
+# sphericalsurface::ntheta[1]              = 55
+# sphericalsurface::symmetric_z[0]         = no
+# sphericalsurface::symmetric_z[1]         = no
+
+#**************************************************
+
+
+# EOS_Omni::poly_gamma                   = 2
+# EOS_Omni::poly_k                       = 148.855
+# EOS_Omni::gl_gamma                     = 2
+# EOS_Omni::gl_k                         = 148.855
+
+HydroBase::evolution_method      = "GRHydro"
+GRHydro::riemann_solver            = "HLLE"
+GRHydro::GRHydro_eos_type          = "General"
+GRHydro::GRHydro_eos_table         = "nuc_eos"
+GRHydro::recon_method              = "ppm"
+GRHydro::GRHydro_stencil            = 3
+GRHydro::bound                     = "none"
+GRHydro::rho_abs_min               = 1.e-10
+GRHydro::GRHydro_atmo_tolerance    = 1.e-3
+GRHydro::sources_spatial_order     = 4
+
+
+# Curvature evolution parameters
+
+ActiveThorns = "GenericFD NewRad"
+ActiveThorns = "ML_BSSN ML_BSSN_Helper"
+ADMBase::evolution_method        = "ML_BSSN"
+ADMBase::lapse_evolution_method  = "ML_BSSN"
+ADMBase::shift_evolution_method  = "ML_BSSN"
+ADMBase::dtlapse_evolution_method= "ML_BSSN"
+ADMBase::dtshift_evolution_method= "ML_BSSN"
+
+ML_BSSN::timelevels = 3
+
+ML_BSSN::harmonicN           = 1      # 1+log
+ML_BSSN::harmonicF           = 2.0    # 1+log
+ML_BSSN::ShiftBCoeff         = 1
+ML_BSSN::ShiftGammaCoeff     = 0.75
+ML_BSSN::BetaDriver          = 2.66
+ML_BSSN::LapseAdvectionCoeff = 0.0
+ML_BSSN::ShiftAdvectionCoeff = 0.0
+
+ML_BSSN::my_initial_boundary_condition = "extrapolate-gammas"
+ML_BSSN::my_rhs_boundary_condition     = "NewRad"
+
+# Some dissipation to get rid of high-frequency noise
+ActiveThorns = "SphericalSurface Dissipation"
+Dissipation::verbose   = "no"
+Dissipation::epsdis   = 0.01
+Dissipation::vars = "
+        ML_BSSN::ML_log_confac
+        ML_BSSN::ML_metric
+        ML_BSSN::ML_curv
+        ML_BSSN::ML_trace_curv
+        ML_BSSN::ML_Gamma
+        ML_BSSN::ML_lapse
+        ML_BSSN::ML_shift
+"
+
+
+# I/O
+
+# cactus::cctk_timer_output = "full"
+
+# Use (create if necessary) an output directory named like the
+# parameter file (minus the .par)
+IO::out_dir             = ${parfile}
+
+# Write one file overall per output (variable/group)
+# In production runs, comment this or set to "proc" to get one file
+# per MPI process
+# RH: 2018-02-10 disable until ticket is addressed: https://trac.einsteintoolkit.org/ticket/2117
+#IO::out_mode            = "onefile"
+
+# Some screen output
+IOBasic::outInfo_every = 4
+IOBasic::outInfo_vars  = "Carpet::physical_time_per_hour HydroBase::rho{reductions='minimum maximum'} ADMBase::lapse{reductions='minimum maximum'} HydroBase::temperature{reductions='minimum maximum'}
+  "
+
+# Scalar output
+IOScalar::outScalar_every    = 2
+IOScalar::one_file_per_group = "yes"
+IOScalar::outScalar_reductions = "norm1 norm2 norm_inf sum maximum minimum"
+IOScalar::outScalar_vars     = "
+ HydroBase::rho{reductions='maximum'}
+ HydroBase::press{reductions='maximum'}
+ HydroBase::eps{reductions='minimum maximum'}
+ HydroBase::vel{reductions='minimum maximum'}
+ HydroBase::w_lorentz{reductions='minimum maximum'}
+ HydroBase::temperature{reductions='minimum maximum'}
+ ADMBase::lapse{reductions='minimum maximum'}
+ ADMBase::shift{reductions='minimum maximum'}
+ ML_BSSN::ML_Ham{reductions='norm1 norm2 maximum minimum norm_inf'}
+ ML_BSSN::ML_mom{reductions='norm1 norm2 maximum minimum norm_inf'}
+ GRHydro::dens{reductions='minimum maximum sum'}
+ Carpet::timing{reductions='average'}
+ # zelmanileak::zelmani_leak_account_local{reductions='sum'}
+"
+
+
+# 1D ASCII output. Disable for production runs!
+IOASCII::out1D_every        = 8
+IOASCII::one_file_per_group = yes
+IOASCII::output_symmetry_points = no
+IOASCII::out1D_vars         = "
+ HydroBase::rho
+ HydroBase::press
+ HydroBase::eps
+ HydroBase::vel
+ ADMBase::lapse
+ ADMBase::metric
+ ADMBase::curv
+ ML_BSSN::ML_Ham
+ ML_BSSN::ML_mom
+ # zelmanileak::zelmani_leak_account_local
+"
+CarpetIOHDF5::one_file_per_group   = yes
+
+# 2D HDF5 output
+CarpetIOHDF5::output_buffer_points = "no"
+CarpetIOHDF5::out2D_every = 8
+CarpetIOHDF5::out2D_vars = "
+ HydroBase::rho
+ HydroBase::eps
+ HydroBase::vel
+ HydroBase::press
+ HydroBase::w_lorentz
+ HydroBase::temperature
+ HydroBase::entropy
+ HydroBase::Y_e
+ ADMBase::lapse
+ ADMBase::shift
+ ADMBase::metric
+ ML_BSSN::ML_Ham
+ ML_BSSN::ML_mom
+ # zelmanileak::lum_local[0]
+ # zelmanileak::lum_local[1]
+ # zelmanileak::lum_local[2]
+ "
+
+# Checkpointing options
+IOHDF5::checkpoint                  = "yes"
+IO::checkpoint_dir                  = $parfile
+IO::recover_dir                     = $parfile
+IO::recover                         = "autoprobe"
+IO::checkpoint_ID                   = "yes"
+IO::checkpoint_every                = 4196
+IO::checkpoint_keep                 = 3
+IO::checkpoint_on_terminate         = "yes"
+
+# Enable to get detailed timing information
+# ActiveThorns = "TimerReport"
+# TimerReport::out_every    = 4096
+# TimerReport::out_filename = "TimerReport"
+# TimerReport::output_all_timers_readable = "yes"
+# TimerReport::output_all_timers = "yes"
+
+# Enable for profiling
+#Carpet::output_timers_every = 1024
+
+
+#ZELMANI PART
+# COMMENTA DA QUI IN POI PER UNA VERSIONE FUNZIONANTE SENZA LEAKAGE
+###################################################à
+# ActiveThorns = "ZelmaniLeak"
+# ZelmaniLeak::force_postmerger = yes
+#
+# ZelmaniLeak::do_ye_of_rho = no #yes
+# ZelmaniLeak::do_pnu = yes
+# ZelmaniLeak::pnu_rho_start = 2.0e12
+# ZelmaniLeak::pnu_in_tmunu = yes
+#
+# ZelmaniLeak::update_tau_every = 16
+# ZelmaniLeak::force_tau_interp = no
+# ZelmaniLeak::do_tau = yes
+# ZelmaniLeak::do_heat = yes
+# ZelmaniLeak::ntheta = 15
+# ZelmaniLeak::nphi = 30
+# ZelmaniLeak::nrad = 100
+# ZelmaniLeak::rad_max = 7.0
+# ZelmaniLeak::nrad_outer = 20
+# ZelmaniLeak::rad_max_outer = 9.3
+# ZelmaniLeak::symm = "octant"
+# ZelmaniLeak::leak_in_premerger = no
+# ZelmaniLeak::start_with_clean_tau = no
+##################################################
+
+# CoreCollapseControl parameters
+# CoreCollapseControl::rho_max_list[0] = 5.0e13
+# CoreCollapseControl::check_every = 64
+# CoreCollapseControl::rho_max_every = 64
+# CoreCollapseControl::handle_PMR = yes
+# CoreCollapseControl::output_control = yes
+# CoreCollapsecontrol::bounce_rho = 2.0e14
+# Corecollapsecontrol::bounce_criterion = "entropy"
+# Corecollapsecontrol::bounce_entropy = 3.0e0
+# CoreCollapseControl::prebounce_rho = 1.0e13
+# CoreCollapseControl::preb_out2D_every = -1
+# CoreCollapseControl::preb_out1D_every = 1024
+# CoreCollapseControl::preb_out0D_every = 128
+# CoreCollapseControl::preb_out3Dhdf5_every = 512
+# CoreCollapseControl::preb_checkpoint_every = 2048
+# CoreCollapseControl::preb_outscalar_every = 128
+# CoreCollapseControl::preb_waves_every = 8
+
+# ye of rho parameters
+# ZelmaniLeak::yeofrho_rho1 = 1.0e7
+# ZelmaniLeak::yeofrho_rho2 = 1.0e13
+# ZelmaniLeak::yeofrho_ye1 = 0.5e0
+# ZelmaniLeak::yeofrho_ye2 = 0.29e0
+# ZelmaniLeak::yeofrho_yec = 0.035e0
+# ZelmaniLeak::yeofrho_do_high_correction = yes
+# ZelmaniLeak::yeofrho_high_correction_ye = 0.2717e0
+# ZelmaniLeak::yeofrho_high_correction_rho = 2.55e14

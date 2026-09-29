@@ -1,0 +1,341 @@
+# Parameter definitions for thorn Spritz_InitData
+# $Header$
+
+shares:ADMBase
+
+USES KEYWORD initial_shift
+
+SHARES: HydroBase
+USES CCTK_INT timelevels
+
+SHARES: Spritz
+USES BOOLEAN Spritz_mhd_fluxCD_Lorenz
+
+private:
+
+KEYWORD Spritz_initial_data "Initial data"
+{
+  "none"	:: "Nothing set here"
+  "con2primtest"	:: "Testing the prim -> con -> prim conversion"
+  "shocktube"	:: "Shocktube type"
+  "2DTest"      :: "Perform 2-dimensional test from the literature"
+  "3DTest"      :: "Perform 3-dimensional test from the literature"
+  "TOVMHD"	:: "Add a magnetic field to a single NS"
+  "BNSMHD"	:: "Add a magnetic field to two NSs, one on x<0 and one on x>0"
+  "BBH"         :: "Define magneto-hydro variables for BBH"
+  "simple-wave" :: "Set initial data for the relativistic simple wave test"
+#  "RNSMHD"	:: "Magnetized Rotating Neutron Star"
+#  "bondi"	:: "Bondi accretion with a radial magnetic field"
+} "none"
+
+KEYWORD shocktube_type "Diagonal or parallel shock?"
+{
+  "diagshock"	:: "Diagonal across all axes"
+  "2Ddiagshock"	:: "Diagonal across the equatorial plane xy"
+  "xshock"	:: "Parallel to x axis"
+  "yshock"	:: "Parallel to y axis"
+  "zshock"	:: "Parallel to z axis"
+  "sphere"  :: "spherically symmetric shock"
+} "diagshock"
+
+KEYWORD shock_case "Simple, Sod's problem or other?"
+{
+  "Simple"		:: "GRAstro_Hydro test case"
+  "KO_ST2"		:: "Komissarov 1999, Shock-Tube 2 (MHD)"
+  "generic_ST"		:: "Giacomazzo et al 2005, generic Shock-Tube test (MHD)"
+  "KO_ST1"		:: "Komissarov 1999, Shock-Tube 1 (MHD)"
+  "KO_Collision"	:: "Komissarov 1999, Collision test (MHD)"
+  "Balsara1"		:: "Balsara 2001, test number 1 (MHD)"
+  "Balsara2"		:: "Balsara 2001, test number 2 (MHD)"
+  "Balsara3"		:: "Balsara 2001, test number 3 (MHD)"
+  "Balsara4"		:: "Balsara 2001, test number 4 (MHD)"
+  "Balsara5"		:: "Balsara 2001, test number 5 (MHD)"
+  "generic_alfven"	:: "Giacomazzo et al 2005, generic Alfven test (MHD)"
+  "user"		:: "user defined Riemann problem, ID in Input.txt (MHD)"
+} "Balsara1"
+
+KEYWORD BHevo_case "Which case for BBH evolution?"
+{
+  "Single Uniform"		:: "Single magnetized BH with uniform magnetic field"
+} "Single Uniform"
+
+REAL Bx2D_init "Initial x-component of magnetic field for 2D test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL By2D_init "Initial y-component of magnetic field for 2D test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL Bz2D_init "Initial z-component of magnetic field for 2D test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL R2D_in "Value of internal radius for 2D test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL rho2D_in "Value of internal density for 2D test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL P2D_in "Value of internal gas pressure for 2D test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL OM2D_in "Value of internal uniform angular velocity for 2D test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL R2D_out "Value of external radius for 2D test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL rho2D_out "Value of external density for 2D test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL P2D_out "Value of external gas pressure for 2D test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL OM2D_out "Value of external uniform angular velocity for 2D test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL velx_init "Value of uniform velocity of loop in x-direction for 2D LoopAdv test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL vely_init "Value of uniform velocity of loop in y-direction for 2D LoopAdv test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL velz_init "Value of uniform velocity of loop in z-direction for 2D LoopAdv test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL Aloop_init "Value of constant used to define A_vec for 2D LoopAdv test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL Y_e_in_loop "Central value of Y_e to be set up inside loop: decreases linearly in (R-r)"
+{
+  0.0:* :: ""
+} 0.0
+
+KEYWORD cylexp_axis_dir "Direction of axis of symmetry for cylindrical explosion"
+{
+  "x_dir" :: "axis of cylinder in the x direction"
+  "y_dir" :: "axis of cylinder in the y direction"
+  "z_dir" :: "axis of cylinder in the z direction"
+} "z_dir"
+
+REAL xc "x-component of the center for 2D test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL yc "y-component of the center for 2D test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL zc "z-component of the center for 2D test"
+{
+  *:*		:: "Anything"
+} 0.0
+
+KEYWORD twodtest_case "Which 2-dimensional test?"
+{
+  "CylBlastExp"	:: "Cylindrical Blast Explosion test"
+  "MagRot"	:: "Magnetic Rotor test"
+  "Alfven"	:: "Alfven Wave test"
+  "LoopAdv"	:: "Loop Advection test"
+} "CylBlastExp"
+
+###################################
+# Alfven Wave test 
+#             Uses rho2D_in
+#                  P2D_in
+#                  Bx2D_init
+#                  AA   
+#                  velx_init           
+#                  alfvenwave_type            
+###################################
+KEYWORD alfvenwave_type "1-dimensional or 2-dimensional?"
+{
+  "1D"  :: "1-dimensional"
+  "2D"  :: "2-dimensional (in x-y plane)"
+} "1D"
+
+CCTK_REAL AA "Alfven Wave Amplitude"
+{
+  (0:* :: "positive"
+} 1.0
+
+
+######################################################
+# Simple Wave Test
+#					Uses rho2D_in
+#						  velx_init
+#                   poly_k
+#						  poly_gamma
+######################################################
+
+shares:EOS_Omni
+USES REAL poly_gamma
+USES REAL poly_k
+
+###################################################################################
+# IMPORTANT NOTE: In order to run LoopAdv test, one should set the param          #
+#                                                                                 #
+#                 Spritz::Spritz_Extr_OB_Avec_Psi = "no"                          #
+#                                                                                 #
+#                 in the .par file. This param turn off the linear extrapolation  #
+#                 of scalar and vector potentials at the boundaries and allows    #
+#                 the correct implementation of Periodic Boundaries, performed    #
+#                 via the "Periodic" thorn.                                       #
+###################################################################################
+
+KEYWORD threedtest_case "Which 3-dimensional test?"
+{
+  "SpherExp"   :: "Spherical Explosion test"
+} "SpherExp"
+
+REAL shock_xpos "Position of shock plane: x"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL shock_ypos "Position of shock plane: y"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL shock_zpos "Position of shock plane: z"
+{
+  *:*		:: "Anything"
+} 0.0
+
+REAL shock_radius "Radius of sperical shock"
+{
+  0.0:*   :: "Anything positive"
+} 1.0
+
+BOOLEAN change_shock_direction "Change the shock direction"
+{
+} "no"
+
+STRING input_file "Name of the file containing initial data"
+{
+ .* :: "Default initial data file"
+} "Input.txt"
+
+
+
+BOOLEAN use_alp "use lapse different from one"
+{
+} "no"
+
+REAL alp_value "value for the lapse"
+{
+  *:*     :: "Anything"
+} 1.0
+
+REAL beta_value "Value for the shift vector"
+{
+  *:*     :: "Anything"
+} 0.0
+
+### Root finding precision for EOS_Omni
+CCTK_REAL Eos_rf_prec "Root finding precision"
+{
+    1.0e-10 :: "Default"
+} 1.0e-10
+
+
+#PARAMETERS for the magnetised NS
+
+REAL Ab1 "Magnetic field intensity of the star located in x>0"
+{
+  *:*	  :: "Anything"
+} 0.0d0
+
+REAL Ab2 "Magnetic field intensity of the star located in x<0"
+{
+  *:*	  :: "Anything"
+} 0.0d0
+
+REAL press_cut "cutoff on the pressure"
+{
+  0.0:*	  :: "Positive"
+} 0.04d0
+
+INT tovmhd_timelevels "Number of time levels in evolution scheme"
+{
+  2:3 :: "Two or three.  FMR/AMR runs probably need 3. Otherwise use 2"
+} 2
+
+INT bnsmhd_timelevels "Number of time levels in evolution scheme"
+{
+  2:3 :: "Two or three.  FMR/AMR runs probably need 3. Otherwise use 2"
+} 2
+
+KEYWORD curlA_method "Method used to compute the curl of the vector potential"
+{
+  "Centered"	:: "Standard Centered Numerical Derivative, divB=0 but not divB2"
+  "SemiAnalytic":: "Only derivative of the pressure are computed numerically"
+  "Staggered"	:: "Numerical Method to ensure divB2=0"
+} "Centered"
+
+KEYWORD Avec_initial "Definition of the initial vector potential"
+{
+  "Bruno"	        :: "First method introduced by BG"
+  "Standard"	    :: "Standard method used in the literature"
+  "Modified"	    :: "Similar to standard but more smooth"
+  "Dipole_Shibata"  :: "Dipole field according to ApJL 734:L36 (2011)"
+  "Homogeneous"     :: "B field corresponding to a homogeneous B field in z direction in the limit of flat space"
+} "Modified"
+
+REAL Avec_kappa "Exponential used in the definition of Avec when using Modified in Avec_initial"
+{
+  0:*	  :: "Should be positive"
+} 2.0d0
+
+REAL cylrad0 "coefficient used in Dipole_Shibata description of Avec_initial"
+{
+  0:*	  :: "Positive. Coordinate radial position of the neutral point of the B field on the equatorial plane. In ApJL 734:L36: sqrt(2)*5/3*R_e--sqrt(2)*20/3*R_e."
+} 22.0d0
+
+shares:Spritz
+
+USES real Spritz_rho_central
+USES KEYWORD Spritz_eos_type ""
+USES string Spritz_eos_table ""
+USES real rho_abs_min
+USES real rho_rel_min
+USES REAL initial_rho_abs_min
+USES REAL initial_rho_rel_min
+USES REAL initial_atmosphere_factor
+USES KEYWORD con2prim_mhd_method ""
+USES boolean compute_DCandMaxima
+USES INT Spritz_stencil
+
+shares:EOS_Omni
+USES REAL gl_gamma

@@ -1,0 +1,176 @@
+#==============================================================================
+# Balsara magnetized shock tube test #3: Spritz_InitData
+#==============================================================================
+
+#------------------------------------------------------------------------------
+# Cactus parameters:
+#------------------------------------------------------------------------------
+Cactus::cctk_run_title = "Balsara magnetized shock tube test #3"
+Cactus::cctk_full_warnings         = "yes"
+
+Cactus::terminate       = "time"
+Cactus::cctk_final_time = 0.4
+
+#------------------------------------------------------------------------------
+# Activate all necessary thorns:
+#------------------------------------------------------------------------------
+ActiveThorns = "Boundary CartGrid3D CoordBase Fortran InitBase IOUtil LocalReduce SymBase Time"
+ActiveThorns = "AEILocalInterp LocalInterp"
+ActiveThorns = "MoL Slab"
+ActiveThorns = "Carpet CarpetInterp CarpetIOASCII CarpetIOHDF5 CarpetIOScalar CarpetLib CarpetIOBasic CarpetReduce CarpetSlab LoopControl"
+ActiveThorns = "NaNChecker"
+ActiveThorns = "ADMbase ADMcoupling ADMmacros CoordGauge StaticConformal"
+ActiveThorns = "Constants TmunuBase HydroBase "
+ActiveThorns = "EOS_Omni"
+ActiveThorns = "Spritz Spritz_InitData"
+ActiveThorns = "SphericalSurface"
+ActiveThorns = "SystemStatistics"
+
+#------------------------------------------------------------------------------
+# Diagnostic parameters:
+#------------------------------------------------------------------------------
+Carpet::storage_verbose   = "no"
+Carpet::verbose           = "no"
+Carpet::veryverbose       = "no"
+Carpet::grid_structure_filename = "carpet-grid-structure.asc"
+Carpet::grid_coordinates_filename = "carpet-grid-coordinates.asc"
+
+CarpetLib::output_bboxes  = "no"
+CarpetLib::memstat_file    = "carpetlib-memory-statistics.asc"
+CarpetLib::timestat_file    = "carpetlib-timing-statistics.asc"
+
+CarpetReduce::verbose    = "no"
+
+#------------------------------------------------------------------------------
+# Utility parameters:
+#------------------------------------------------------------------------------
+NaNChecker::check_every   =  1
+NaNChecker::check_vars = "
+            ADMBase::curv 
+            ADMBase::metric 
+            ADMBase::lapse 
+            ADMBase::shift 
+            HydroBase::rho 
+            HydroBase::eps 
+            HydroBase::press 
+            HydroBase::vel
+            HydroBase::w_lorentz
+"
+NaNChecker::action_if_found   =  "terminate"
+
+#------------------------------------------------------------------------------
+# Run parameters:
+#------------------------------------------------------------------------------
+
+#------
+# Grid:
+#------
+Time::dtfac = 0.8
+MoL::ODE_Method             = "rk4"
+MoL::MoL_Intermediate_Steps = 4
+MoL::MoL_Num_Scratch_Levels = 1
+
+CartGrid3D::type         = "coordbase"
+CartGrid3D::domain       = "full"
+CartGrid3D::avoid_origin = "no"
+
+CoordBase::domainsize       = "minmax"
+CoordBase::spacing          = "gridspacing"
+
+CoordBase::xmin = -0.5
+CoordBase::ymin = -0.05
+CoordBase::zmin = -0.05
+CoordBase::xmax =  0.5
+CoordBase::ymax =  0.05
+CoordBase::zmax =  0.05
+CoordBase::dx   =  0.1      # dx or ncells_x
+CoordBase::dy   =  0.01     # dy or ncells_y
+CoordBase::dz   =  0.01     # dz or ncells_z
+
+Driver::ghost_size                  = 3
+
+# General Carpet parameters:
+Carpet::domain_from_coordbase    = "yes"
+
+CarpetLib::poison_new_memory         = "yes"
+CarpetLib::poison_value              = 114
+
+ADMBase::evolution_method	        = "none"
+ADMBase::metric_type			= "physical"
+ADMBase::initial_data                   = "Cartesian Minkowski"
+ADMBase::initial_lapse                  = "one"
+ADMBase::initial_shift                  = "zero"
+ADMBase::initial_dtlapse                = "none"
+ADMBase::initial_dtshift                = "none"
+
+#---------
+# EOS
+#---------
+EOS_Omni::poly_gamma                   = 1.66666667
+EOS_Omni::poly_k                       = 100
+EOS_Omni::gl_gamma                     = 1.66666667
+EOS_Omni::gl_k                         = 100
+Spritz::Spritz_eos_type          = "General"
+Spritz::Spritz_eos_table         = "Ideal_Fluid"
+
+#----------
+# Numerics:
+#----------
+HydroBase::timelevels            = 3
+
+#-----------
+# Evolution:
+#-----------
+HydroBase::evolution_method      = "Spritz"
+
+# Parameters of thorn Spritz (implementing Spritz)
+Spritz::flux_type               = "LxF"
+Spritz::recon_method            = "minmod"
+Spritz::bound		           = "flat"
+Spritz::con2prim_mhd_method           = "Noble"
+Spritz::Spritz_mhd_tolf          = 1.0e-13
+Spritz::Spritz_countmax          = 100
+Spritz::Spritz_check_divB        = "yes"
+Spritz::zero_slope_fix                = "yes"
+Spritz::prolongation_type_MHD = "none"
+Spritz::Spritz_mhd_fluxCD_Lorenz = "no"
+Spritz::lorenz_damp_fac = 0
+Spritz::Spritz_Avec_Staggered = "yes"
+Spritz::Spritz_Extr_OB_Avec_Psi = "yes"
+
+#------
+# MODEL:
+#------
+Spritz_InitData::Spritz_initial_data = "shocktube"
+Spritz_InitData::shocktube_type = "xshock"
+Spritz_InitData::shock_case = "Balsara3"
+
+#------------------------------------------------------------------------------
+# Output:
+#------------------------------------------------------------------------------
+IO::out_dir = $parfile
+IO::out_fileinfo           = "none"
+
+IOBasic::outInfo_every = 1
+IOBasic::outInfo_reductions = "minimum maximum"
+IOBasic::outInfo_vars  = "
+ HydroBase::rho
+ HydroBase::press
+ Spritz::B_norm
+"
+
+IOASCII::one_file_per_group     = "no"
+IOASCII::output_symmetry_points = "no"
+
+CarpetIOASCII::out1D_every     = 10
+CarpetIOASCII::out1D_d         = "no"
+CarpetIOASCII::out1D_vars      = "
+ Spritz::Spritz_mhd_vector_var
+ Spritz::Spritz_mhd_evolved_var 
+ HydroBase::eps
+ HydroBase::press
+ HydroBase::rho
+ HydroBase::vel
+ HydroBase::w_lorentz
+"
+

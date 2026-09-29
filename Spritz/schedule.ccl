@@ -1,0 +1,792 @@
+# Schedule definitions for thorn Spritz
+# $Header$
+
+if (Spritz_use_zrake_macfadyen_amplification)
+{
+  STORAGE:eps_KT
+}
+
+if (timelevels == 3)
+{
+  STORAGE: ADMBase::metric[3], ADMBase::curv[3]
+  STORAGE: ADMBase::lapse[3]
+  STORAGE:dens[3]
+  STORAGE:tau[3]
+  STORAGE:scon[3]
+  STORAGE:HydroBase::w_lorentz[3]
+  STORAGE:Spritz_mhd_vector_var[3]
+  STORAGE:Spritz_mhd_evolved_var[3]
+  STORAGE:mhd_c2p_mask
+  STORAGE:Spritz_mhd_E_var
+  STORAGE:Spritz_mhd_rhs_var
+  STORAGE:Avec_x[3]
+  STORAGE:Avec_y[3]
+  STORAGE:Avec_z[3]
+  STORAGE:Avec_x_rhs
+  STORAGE:Avec_y_rhs
+  STORAGE:Avec_z_rhs
+  STORAGE:psi_mhd[3]
+  STORAGE:psi_mhdrhs
+  STORAGE:support_arrays_rhs_at_centers
+}
+else
+{
+  STORAGE: ADMBase::metric[2], ADMBase::curv[2]
+  STORAGE: ADMBase::lapse[2]
+  STORAGE:dens[2]
+  STORAGE:tau[2]
+  STORAGE:scon[2]
+  STORAGE:HydroBase::w_lorentz[2]
+  STORAGE:Spritz_mhd_vector_var[2]
+  STORAGE:Spritz_mhd_evolved_var[2]
+  STORAGE:mhd_c2p_mask
+  STORAGE:Spritz_mhd_E_var
+  STORAGE:Spritz_mhd_rhs_var
+  STORAGE:Avec_x[2]
+  STORAGE:Avec_y[2]
+  STORAGE:Avec_z[2]
+  STORAGE:Avec_x_rhs
+  STORAGE:Avec_y_rhs
+  STORAGE:Avec_z_rhs
+  STORAGE:psi_mhd[2]
+  STORAGE:psi_mhdrhs
+  STORAGE:support_arrays_rhs_at_centers
+}
+STORAGE:Spritz_reflevel
+STORAGE:densrhs
+STORAGE:taurhs
+STORAGE:srhs
+STORAGE:Spritz_eos_scalars
+STORAGE:Spritz_minima
+STORAGE:Spritz_scalars
+
+#need to always store Y_e, temperature and Y_e_con, due to Prim2ConInitial
+STORAGE: HydroBase::Y_e[timelevels]
+STORAGE: HydroBase::temperature[timelevels]
+STORAGE: Y_e_con[timelevels]
+
+if(CCTK_Equals(Y_e_evolution_method,"Spritz"))
+{
+  STORAGE: Y_e_con_rhs, Y_e_con_flux, Y_e_plus, Y_e_minus, Y_e_HO
+}
+if(CCTK_Equals(temperature_evolution_method,"Spritz"))
+{
+  STORAGE: tempplus, tempminus
+  STORAGE: HydroBase::entropy[timelevels]
+}
+STORAGE:evolve_Y_e
+STORAGE:GetTemp_FromThermo #GRHydro calls this evolve_temper, but it's misleading. temperature is not actually evolved, but taken from thermo values.
+STORAGE:Constrain_Temp_now #do not change local temperature
+
+schedule Spritz_Initialize AT CCTK_Initial BEFORE HydroBase_Initial
+{
+  LANG: Fortran
+} "Initialize GRMHD variables to zero"
+
+# leave this here for compatibility with older code, should not be used anymore
+# and go out at some point
+schedule group Spritz_Initial IN HydroBase_Initial BEFORE SetTmunu
+{
+} "Spritz initial data group"
+
+
+#################################################
+### Storage for the extra timelevels for the  ###
+### use of MoL with Einstein                  ###
+#################################################
+
+if (!CCTK_Equals(initial_shift,"none"))
+{
+  if (timelevels == 3)
+  {
+    STORAGE: ADMBase::shift[3]
+  }
+  else
+  {
+    STORAGE: ADMBase::shift[2]
+  }
+}
+
+##############################################
+### Storage for the conformal state scalar ###
+##############################################
+
+STORAGE: conformal_state
+
+###############################
+### Register startup banner ###
+###############################
+
+schedule Spritz_Startup AT WRAGH AFTER EOSBase_GeneralRegister AFTER HydroBase_StartUp
+{
+  LANG: Fortran
+} "Startup banner"
+
+
+####################################
+### Check the parameters are ok. ###
+####################################
+
+schedule Spritz_ParamCheck AT PARAMCHECK
+{
+  LANG: Fortran
+} "Check parameters"
+
+schedule Spritz_TemperatureCheck AT CCTK_INITIAL AFTER HydroBase_Initial BEFORE HydroBase_Prim2ConInitial
+{
+  LANG: Fortran
+} "Make sure the temperature is uniform if constraining it."
+
+######################################
+### Standard symmetry registration ###
+######################################
+
+schedule Spritz_InitSymBound AT BASEGRID AFTER (ADMBase_SetShiftStateOn,ADMBase_SetShiftStateOff) BEFORE (SymBase_Check,TmunuBase_SetStressEnergyState)
+{
+  LANG: Fortran
+} "Schedule symmetries"
+
+##################################
+### Set the handle for the EOS ###
+##################################
+
+schedule Spritz_EOSHandle AT CCTK_INITIAL before HydroBase_Initial
+{
+  OPTIONS: GLOBAL
+  LANG: C
+} "Set the EOS number"
+
+schedule Spritz_EOSHandle AT CCTK_POST_RECOVER_VARIABLES BEFORE MoL_PostStep
+{
+  OPTIONS: GLOBAL
+  LANG: C
+} "Set the EOS number"
+
+####################################
+### Setup of rho minima scalars  ###
+####################################
+
+schedule Spritz_Rho_Minima_Setup  AT CCTK_Initial BEFORE HydroBase_Initial
+{
+  LANG: Fortran
+} "Set up minimum for the rest-mass density in the atmosphere (before intial data)"
+
+if (rho_abs_min_after_recovery > 0.0)
+{
+  schedule Spritz_Change_Rho_Minimum_At_Recovery AT CCTK_POST_RECOVER_VARIABLES
+  {
+    LANG: Fortran
+  } "Set up minimum for the rest-mass density in the atmosphere (before intial data)"
+}
+
+   schedule Spritz_Rho_Minima_Setup_Final AT CCTK_PostPostInitial BEFORE Con2Prim
+   {
+     LANG: C
+   } "Set the value of the rest-mass density of the atmosphere which will be used during the evolution"
+
+##   schedule Spritz_InitialAtmosphereReset AT CCTK_PostPostInitial BEFORE Con2Prim AFTER Spritz_Rho_Minima_Setup_Final
+##   {
+##       LANG: Fortran
+##   } "Use mask to enforce atmosphere at initial time"
+
+
+# this is a temporary hack, because carpet does allow only one loop over the levels for Basegrid-Iniital-Postinitial
+# so we must compute Spritz_rho_min at postpostinitial and the constraints after this (and afer C2P)
+#  schedule GROUP ADMConstraintsGroup at CCTK_POSTINITIAL after (MoL_PostStep MoL_PostInitial)
+  schedule GROUP ADMConstraintsGroup AT CCTK_POSTPOSTINITIAL
+  {
+  } "Evaluate ADM constraints, and perform symmetry boundary conditions"
+
+
+
+#################################################
+### Standard registration of variables to MoL ###
+#################################################
+
+schedule Spritz_Register IN MoL_Register
+{
+  LANG: C
+} "Register variables for MoL"
+
+####################################################
+### Setup of any scalars for efficiency purposes ###
+####################################################
+
+schedule Spritz_Scalar_Setup IN MoL_PreStep
+{
+  LANG: Fortran
+} "Set up and check scalars for efficiency"
+
+##schedule Spritz_SetupDescriptors AT CCTK_Initial BEFORE HydroBase_Initial
+##{
+##  LANG: C
+##} "Get and store the mask descriptors"
+
+
+
+
+#####################################################################
+### Initialize the atmosphere and the conserved variables.        ###
+#####################################################################
+
+  schedule Spritz_Prim2ConInitial IN HydroBase_Prim2ConInitial
+  {
+    LANG: C
+    SYNC: dens
+    SYNC: scon
+    SYNC: tau
+    SYNC: press
+    SYNC: HydroBase::w_lorentz
+    SYNC: hydrobase::Y_e
+    SYNC: Y_e_con
+    SYNC: Spritz_mhd_evolved_var
+  } "Setup the atmosphere and the conserved variables"
+
+
+#####################################################################
+### The group to calculate the update term for MoL. This contains ###
+### the calculation of the source terms and the flux update.      ###
+#####################################################################
+
+schedule group SpritzRHS IN HydroBase_RHS
+{
+  STORAGE:Spritz_scalars
+} "Calculate the update terms"
+
+# HydroBase_RHS runs in MoL_CalcRHS, i.e. once per Runge-Kutta substep, not
+# once per full timestep -- unlike the Con2Prim/Boundaries re-fixes above.
+# Between substeps Carpet refreshes ghostzones (including Avec's, via the
+# same staggering-unaware generic fill), so SourceTerms/FluxTerms below
+# (which read Avec's z-neighbors via curl/InterpEdges2Center, see
+# Spritz_HLLE_MHD.F90) would otherwise use stale/wrong-parity ghostzones on
+# every substep except the first. No SYNC of its own.
+schedule Spritz_set_Avec_gz_symmetries IN SpritzRHS BEFORE SourceTerms
+{
+  LANG: C
+  READS: GRID::coordinates, Avec_x, Avec_y, Avec_z
+  WRITES: Avec_x(boundary), Avec_y(boundary), Avec_z(boundary)
+} "Re-apply staggered equatorial-symmetry ghostzones on Avec before every RHS substep"
+
+####################################################################
+### Do the source terms first, as this does not require the loop ###
+### over the different directions                                ###
+####################################################################
+
+schedule SourceTerms IN SpritzRHS BEFORE FluxTerms
+{
+  LANG: Fortran
+} "Source term calculation"
+
+#################################################################
+### Initial setup for the loop over the different directions. ###
+#################################################################
+
+schedule SpritzStartLoop IN SpritzRHS BEFORE FluxTerms
+{
+  LANG: Fortran
+  OPTIONS: level
+} "Set the flux_direction variable"
+
+# this avoids poison warnings at startup, but is otherwise unnecessary
+schedule SpritzStartLoop AT BASEGRID
+{
+  LANG: Fortran
+  OPTIONS: level
+} "Set the flux_direction variable"
+
+###################################################################
+### The group to calculate the update terms from the fluxes. We ###
+### do this as a loop over each direction to reduce coding and  ###
+### hopefully to reduce bugs. The parameter flux_direction runs ###
+### from (3->0) corresponding to (z->x) and stopping. At each   ###
+### step in the loop the data is reconstructed and then the     ###
+### fluxes are computed by the Riemann solve.                   ###
+###################################################################
+
+
+schedule group FluxTerms IN SpritzRHS WHILE Spritz::flux_direction
+{
+  STORAGE:Spritz_prim_bext
+  STORAGE:Spritz_con_bext
+  STORAGE:Spritz_fluxes
+  STORAGE:Spritz_mhd_bext
+  STORAGE:Spritz_mhd_fluxes
+  STORAGE:Spritz_fluxes_HO
+ } "Calculation of intercell fluxes"
+
+##############################################################
+### This is a wrapper call to the reconstruction routines. ###
+##############################################################
+
+  if (CCTK_Equals(Spritz_eos_type,"Polytype"))
+  {
+    schedule ReconstructionPolytype IN FluxTerms AS Reconstruct
+    {
+      LANG: Fortran
+    } "Reconstruct the functions at the cell boundaries"
+  }
+  else if (CCTK_Equals(Spritz_eos_type,"General"))
+  {
+    schedule Reconstruction IN FluxTerms AS Reconstruct
+    {
+      LANG: Fortran
+    } "Reconstruct the functions at the cell boundaries"
+  }
+
+
+    schedule RiemannSolve IN FluxTerms AFTER Reconstruct AS Riemann
+    {
+      LANG: Fortran
+    } "Solve the local Riemann problems"
+
+
+
+
+###########################################################
+### After calculating the fluxes, calculate the update. ###
+###########################################################
+
+schedule UpdateCalculation IN FluxTerms AFTER Riemann
+{
+  LANG: Fortran
+} "Calculate the update term from the fluxes"
+
+
+
+#################################
+### Advance the loop counter. ###
+#################################
+
+schedule SpritzAdvanceLoop IN FluxTerms AFTER UpdateCalculation
+{
+  LANG: Fortran
+  OPTIONS: level
+} "Decrement the flux_direction variable"
+
+
+
+schedule SpritzMHDCT IN SpritzRHS AFTER FluxTerms
+{
+LANG: Fortran
+} "Constrained Transport scheme for the magnetic field fluxes"
+
+
+if (Spritz_check_divB)
+{
+       STORAGE: Spritz_mhd_analysis
+       ########DEBUG STUFF##########
+       ##STORAGE: alfven_vel
+       ##STORAGE: sound_vel
+       ##STORAGE: alfven_velx_r
+       ##STORAGE: alfven_velx_l
+       ##STORAGE: magnetowave_x_1
+       ##STORAGE: magnetowave_x_2
+       ##STORAGE: magnetowave_x_3
+       ##STORAGE: magnetowave_x_4
+       ##STORAGE: velx_tilde_out
+       ##STORAGE: vely_tilde_out
+       ##STORAGE: velz_tilde_out
+
+         STORAGE: divA
+
+
+	schedule Spritz_MHD_Initialize AT CCTK_Initial BEFORE HydroBase_Initial
+	{
+	  LANG: Fortran
+	  } "Initialize MHD analysis quantities"
+
+	  # If using mesh refinement
+	  schedule Spritz_MHD_Initialize AT POSTREGRID BEFORE MoL_PostStep
+	  {
+	    LANG: Fortran
+	  } "Initialize MHD analysis quantities"
+
+	  schedule Spritz_MHD_Initialize AT POSTRESTRICTINITIAL BEFORE HydroBase_PostStep
+	  {
+	    LANG: Fortran
+	  } "Initialize MHD analysis quantities"
+
+
+       schedule Spritz_divB AT ANALYSIS
+       {
+       LANG: Fortran
+       SYNC: Spritz_mhd_analysis
+       TRIGGER: Spritz_mhd_analysis
+       } "Compute the divergence of B and other useful quantities"
+}
+
+if (Spritz_check_BTor)
+{
+	STORAGE: Spritz_mhd_spherical
+	STORAGE: Spritz_mean_B_Tor_numerator_temps[3]
+	STORAGE: Spritz_mean_B_Tor_denominator_temps[3]
+	STORAGE: Spritz_mean_B_Pol_numerator_temps[3]
+
+	STORAGE: Spritz_mean_B_Tor_numerator
+	STORAGE: Spritz_mean_B_Tor_denominator
+	STORAGE: Spritz_mean_B_Pol_numerator
+
+	STORAGE: Spritz_mean_B_Tor
+	STORAGE: Spritz_mean_B_Pol
+
+	schedule group Spritz_MHD_Spherical AT Poststep
+        {
+        } "Computation of Toroidal and Polidal components of the magnetic field (including their integrals)"
+
+	schedule Spritz_B_Spherical IN Spritz_MHD_Spherical
+	{
+	LANG: Fortran
+	SYNC: Spritz_mhd_spherical
+	##TRIGGER: Spritz_mhd_spherical
+	} "Compute the toroidal component of the magnetic field"
+
+	schedule Spritz_B_Spherical_Global IN Spritz_MHD_Spherical AFTER Spritz_B_Spherical
+	{
+	LANG: Fortran
+	##TRIGGER: Spritz_mhd_spherical
+	OPTIONS: global
+	} "Compute the mean value of toroidal and polidal components"
+}
+
+if (compute_EMenergy)
+{
+        STORAGE: Spritz_EMenergy_temps[3]
+        STORAGE: Spritz_total_magnetic_energy
+        STORAGE: grid_spacing_product_mhd
+
+        STORAGE: Spritz_kinetic_energy_temps[3]
+        STORAGE: Spritz_total_kinetic_energy
+
+	STORAGE: Spritz_mean_B_numerator_temps[3]
+	STORAGE: Spritz_mean_B_numerator
+	STORAGE: Spritz_mean_B_denominator_temps[3]
+	STORAGE: Spritz_mean_B_denominator
+	STORAGE: Spritz_mean_B
+
+        STORAGE: Spritz_turbulent_energy_temps[3]
+        STORAGE: Spritz_turbulent_energy
+
+        STORAGE: Spritz_turbulent_energy_amplification_temps[3]
+        STORAGE: Spritz_turbulent_energy_amplification
+
+        schedule group Spritz_EMEnergy AT Poststep
+        {
+        } "Computation of total magnetic energy"
+
+        schedule Spritz_Magnetic_Energy_Local IN Spritz_EMEnergy
+        {
+          LANG: Fortran
+        } "Magnetic energy, local calculations"
+
+        schedule Spritz_Magnetic_Energy_Global IN Spritz_EMEnergy AFTER Spritz_Magnetic_Energy_Local
+        {
+          LANG: Fortran
+          OPTIONS: global
+        } "Magnetic energy, reduction operation"
+
+}
+
+
+
+
+#################################################################
+### After MoL has updated the conserved variables, we need to ###
+### convert back to primitive variables. This is a wrapper    ###
+### over the entire grid.                                     ###
+#################################################################
+
+########################################################
+### Find the refinement level that is being computed ###
+########################################################
+
+schedule Spritz_RefinementLevel IN MoL_PostStep BEFORE (HydroBase_PostStep)
+{
+  LANG: Fortran
+} "Calculate current refinement level"
+
+schedule Spritz_RefinementLevel AT CCTK_PostStep
+{
+  LANG: Fortran
+} "Calculate current refinement level (for the check of the C2P mask)"
+
+schedule Spritz_RefinementLevel AT POSTREGRIDINITIAL
+{
+  LANG: Fortran
+} "Calculate current refinement level"
+
+schedule Spritz_RefinementLevel AT INITIAL BEFORE HydroBase_Initial
+{
+  LANG: Fortran
+} "Calculate current refinement level"
+
+schedule Spritz_RefinementLevel IN MoL_PreStep
+{
+  LANG: Fortran
+} "Calculate current refinement level"
+
+
+if (CCTK_Equals(Spritz_eos_type,"Polytype"))
+{
+  #When using the vector potential Con2Prim is not executed on all the ghost-points
+  # and so we need to syncronize the different processors
+      schedule Con2PrimPolytype_mhd IN HydroBase_Con2Prim AS Con2Prim
+      {
+      LANG: Fortran
+      SYNC: HydroBase::w_lorentz
+      SYNC: HydroBase::rho
+      SYNC: HydroBase::press
+      SYNC: HydroBase::eps
+      SYNC: HydroBase::vel
+      SYNC: hydrobase::Y_e
+      SYNC: Spritz_mhd_vector_var
+      SYNC: Spritz_mhd_evolved_var
+      SYNC: Avec_x
+      SYNC: Avec_y
+      SYNC: Avec_z
+      SYNC: psi_mhd
+      } "Convert back to primitive variables (general, GRMHD version)"
+}
+else if (CCTK_Equals(Spritz_eos_type,"General"))
+{
+  #When using the vector potential Con2Prim is not executed on all the ghost-points
+	# and so we need to syncronize the different processors
+        # Syncing also tau in order to avoid issue when T is constrained
+      schedule Conservative2Primitive_mhd IN HydroBase_Con2Prim AS Con2Prim
+      {
+      LANG: Fortran
+      SYNC: HydroBase::w_lorentz
+      SYNC: HydroBase::rho
+      SYNC: HydroBase::press
+      SYNC: HydroBase::eps
+      SYNC: HydroBase::vel
+      SYNC: hydrobase::Y_e
+      SYNC: hydrobase::temperature
+      SYNC: hydrobase::entropy
+      SYNC: Spritz_mhd_vector_var
+      SYNC: Spritz_mhd_evolved_var
+      SYNC: Avec_x
+      SYNC: Avec_y
+      SYNC: Avec_z
+      SYNC: psi_mhd
+      SYNC: tau
+      } "Convert back to primitive variables (general, GRMHD version)"
+}
+
+# Re-fix Avec_x/Avec_y's staggered equatorial-symmetry ghostzones: the
+# preceding SYNC hands them back to ReflectionSymmetry's generic
+# (staggering-unaware) fill, which is wrong for these z-staggered fields
+# (see Spritz_set_Avec_gz_symmetries.c for why). No SYNC of its own.
+schedule Spritz_set_Avec_gz_symmetries IN HydroBase_Con2Prim AFTER Con2Prim
+{
+  LANG: C
+  READS: GRID::coordinates, Avec_x, Avec_y, Avec_z
+  WRITES: Avec_x(boundary), Avec_y(boundary), Avec_z(boundary)
+} "Re-apply staggered equatorial-symmetry ghostzones on Avec after Con2Prim's SYNC"
+
+#################################################################
+### Having finished all the updates, we apply the boundary    ###
+### conditions and synchronize the conservative and primitive ###
+### variables. All other grid functions are reset only in the ###
+### interior of the grid and are totally reset at every step, ###
+### and so synchronization is not necessary.                  ###
+#################################################################
+
+schedule group Do_Spritz_Boundaries IN HydroBase_Boundaries BEFORE(HydroBase_Select_Boundaries)
+{
+} "Spritz Boundary conditions group"
+
+schedule Spritz_Boundaries IN HydroBase_Select_Boundaries
+{
+  LANG: Fortran
+  OPTIONS: LEVEL
+  SYNC: dens
+  SYNC: tau
+  SYNC: scon
+  SYNC: HydroBase::w_lorentz
+  SYNC: HydroBase::rho
+  SYNC: HydroBase::press
+  SYNC: HydroBase::eps
+  SYNC: HydroBase::vel
+  SYNC: hydrobase::temperature
+  SYNC: hydrobase::Y_e
+  SYNC: Y_e_con
+  SYNC: Spritz_mhd_vector_var
+  SYNC: Spritz_mhd_evolved_var
+  SYNC: Avec_x
+  SYNC: Avec_y
+  SYNC: Avec_z
+  SYNC: psi_mhd
+} "Select Spritz boundary conditions"
+
+# Re-fix again after this SYNC too, for the same reason as after Con2Prim.
+schedule Spritz_set_Avec_gz_symmetries IN HydroBase_Select_Boundaries AFTER Spritz_Boundaries
+{
+  LANG: C
+  READS: GRID::coordinates, Avec_x, Avec_y, Avec_z
+  WRITES: Avec_x(boundary), Avec_y(boundary), Avec_z(boundary)
+} "Re-apply staggered equatorial-symmetry ghostzones on Avec after Spritz_Boundaries' SYNC"
+
+
+schedule Spritz_outer_boundaries_on_A_mu IN HydroBase_Boundaries
+{
+  LANG: C
+} "Linear extrapolation on A_mu at outer boundaries"
+
+
+schedule group HydroBase_Boundaries IN MoL_Evolution AFTER MoL_Step
+{
+} "HydroBase Boundary conditions group"
+
+
+
+if (compute_DCandMaxima)
+{
+  STORAGE: Spritz_maxima_location
+  STORAGE: Spritz_maxima_position
+  STORAGE: Spritz_maxima_iteration
+  STORAGE: Spritz_maxima_separation
+  STORAGE: maxrho_global
+  STORAGE: maxrho_global_plus
+  STORAGE: maxrho_global_minus
+
+  schedule Spritz_InitFindMaxima AT Initial
+  {
+    LANG:Fortran
+    OPTIONS: GLOBAL
+  } "Initialize the scalars for the routine that locates the maxima"
+
+
+
+  schedule GROUP Spritz_DCAndMaxima AT POSTSTEP #Analysis
+  {
+    STORAGE: Spritz_maxima_location
+    STORAGE: Spritz_maxima_position
+    STORAGE: Spritz_maxima_separation
+  } "Find the maximum of the density and the star separation"
+
+
+    schedule Spritz_FindMaxima IN Spritz_DCAndMaxima
+    {
+      LANG: Fortran
+      OPTIONS: local
+  } "Use the maximum of the density to set the position of the center of the star"
+
+
+  if (compute_EqualMassStarSeparation)
+  {
+    schedule Spritz_FindSeparation IN Spritz_DCAndMaxima AFTER Spritz_FindMaxima
+    {
+      LANG: Fortran
+      OPTIONS: GLOBAL
+      TRIGGERS: Spritz_maxima_position
+      TRIGGERS: Spritz_maxima_separation
+    } "Find the separation of a binary NS from the maxima"
+  }
+}
+
+# Check that rho >= Spritz_rho_min
+##if (Check_Rho_Minimum)
+##{
+##  schedule Spritz_Check_Rho_Minimum AT ANALYSIS
+##  {
+##    LANG: Fortran
+##    TRIGGERS: HydroBase::rho
+##    TRIGGERS: HydroBase::press
+##    TRIGGERS: HydroBase::eps
+##  } "Check whether somewhere rho(i,j,k) < Spritz_rho_min and produce a WARNING"
+##
+##  schedule Spritz_RefinementLevel AT ANALYSIS BEFORE Spritz_Check_Rho_Minimum
+##  {
+##    LANG: Fortran
+##    TRIGGERS: HydroBase::rho
+##    TRIGGERS: HydroBase::press
+##    TRIGGERS: HydroBase::eps
+##  } "Calculate current refinement level"
+##}
+
+
+
+schedule Spritz_Tmunu IN AddToTmunu
+{
+  LANG: Fortran
+} "Compute the energy-momentum tensor"
+
+#the following is necessary because TmunuBase does not have enough schedule
+
+schedule GROUP SetTmunu AT POSTRESTRICTINITIAL AFTER HydroBase_Con2Prim BEFORE ADMConstraintsGroup
+{
+} "Calculate the stress-energy tensor"
+
+schedule GROUP SetTmunu AT POSTPOSTINITIAL AFTER HydroBase_Con2Prim BEFORE ADMConstraintsGroup
+{
+} "Calculate the stress-energy tensor"
+
+schedule GROUP SetTmunu IN MoL_Evolution AFTER ApplyBCs
+{
+} "Calculate the stress-energy tensor"
+
+
+############################################################
+###
+###  In order to obtain consistent results from checkpoint files
+###  in recovery process, we need synchronization before creating
+###  checkpoint files.
+###                                  by Kentaro Apr 2013.
+###
+############################################################
+
+if (     CCTK_Equals( ADMBase_evolution_method,         "static" ) || CCTK_Equals( ADMBase_evolution_method, "none" ) \
+    ||   CCTK_Equals( ADMBase_lapse_evolution_method,   "static" ) \
+    ||   CCTK_Equals( ADMBase_shift_evolution_method,   "static" ) \
+    || ( CCTK_Equals( ADMBase_dtlapse_evolution_method, "static" ) && CCTK_IsThornActive( "ML_BSSN" ) ) \
+    || ( CCTK_Equals( ADMBase_dtshift_evolution_method, "static" ) && CCTK_IsThornActive( "ML_BSSN" ) ) )
+{
+    schedule GROUP ADMBase_Sync IN Recovery_Sync_BeforeCheckpoint
+    {
+	OPTIONS: LEVEL
+	SYNC: ADMBase::lapse
+	SYNC: ADMBase::dtlapse
+	SYNC: ADMBase::shift
+	SYNC: ADMBase::dtshift
+	SYNC: ADMBase::metric
+	SYNC: ADMBase::curv
+    } "synchronization of ADMBase variables"
+}
+
+
+schedule GROUP Spritz_Sync IN Recovery_Sync_BeforeCheckpoint
+{
+	OPTIONS: LEVEL
+	SYNC: dens
+	SYNC: tau
+	SYNC: scon
+	SYNC: HydroBase::w_lorentz
+	SYNC: HydroBase::rho
+	SYNC: HydroBase::press
+	SYNC: HydroBase::eps
+	SYNC: HydroBase::vel
+  SYNC: hydrobase::Y_e
+  SYNC: Y_e_con
+	SYNC: Spritz_mhd_vector_var
+	SYNC: Spritz_mhd_evolved_var
+	SYNC: Avec_x
+	SYNC: Avec_y
+	SYNC: Avec_z
+	SYNC: psi_mhd
+} "synchronization of hydro variables"
+
+schedule Spritz_CheckConstrainT IN CCTK_POSTSTEP AFTER Spritz_RefinementLevel
+{
+  LANG: C
+} "Check if constraining temperature."
+
+if(!CCTK_IsThornActive("ZelmaniLeak")) { #it is already scheduled by ZelmaniLeak.
+  if(Spritz_Constrain_Temperature) {
+    schedule group HydroBase_Prim2ConInitial AT CCTK_EVOL AFTER (MoL_Evolution,MoL_PseudoEvolution)
+    {
+    } "Do some Prim2Con on cell-centers to update conserved variable tau."
+  }
+}
+
+############################################################
+############################################################

@@ -1,0 +1,3 @@
+# Configuration definition for thorn ID_Mag_NS
+
+REQUIRES LORENE (<=2017-05-08)

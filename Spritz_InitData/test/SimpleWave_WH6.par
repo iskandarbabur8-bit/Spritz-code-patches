@@ -1,0 +1,213 @@
+#==============================================================================
+# Simple wave test: Spritz_InitData
+#==============================================================================
+
+#------------------------------------------------------------------------------
+# Cactus parameters:
+#------------------------------------------------------------------------------
+Cactus::cctk_run_title = "Simple Wave Test: WENOZ + HLLE6"
+Cactus::cctk_full_warnings         = "no" #"yes"
+
+Cactus::terminate       = "time"
+Cactus::cctk_final_time = 0.15 
+
+
+#------------------------------------------------------------------------------
+# Activate all necessary thorns:
+#------------------------------------------------------------------------------
+
+ActiveThorns = "Boundary CartGrid3D CoordBase Fortran InitBase IOUtil LocalReduce SymBase Time"
+ActiveThorns = "AEILocalInterp LocalInterp"
+ActiveThorns = "MoL Slab SpaceMask"
+ActiveThorns = "Carpet CarpetInterp CarpetIOASCII CarpetIOHDF5 CarpetIOScalar CarpetLib CarpetIOBasic CarpetReduce CarpetSlab LoopControl"
+ActiveThorns = "NaNChecker TerminationTrigger TimerReport"
+ActiveThorns = "ADMbase ADMcoupling ADMmacros CoordGauge StaticConformal"
+ActiveThorns = "Constants TmunuBase HydroBase "
+ActiveThorns = "EOS_Omni"
+ActiveThorns = "Spritz Spritz_InitData"
+ActiveThorns = "SystemStatistics"
+
+#------------------------------------------------------------------------------
+# Diagnostic parameters:
+#------------------------------------------------------------------------------
+Carpet::storage_verbose   = "no"
+Carpet::verbose           = "no"
+Carpet::veryverbose       = "no"
+#Carpet::grid_structure_filename = "carpet-grid-structure.asc"
+#Carpet::grid_coordinates_filename = "carpet-grid-coordinates.asc"
+
+CarpetLib::output_bboxes  = "no"
+CarpetLib::memstat_file    = "carpetlib-memory-statistics.asc"
+CarpetLib::timestat_file    = "carpetlib-timing-statistics.asc"
+
+CarpetReduce::verbose    = "no"
+
+#------------------------------------------------------------------------------
+# Utility parameters:
+#------------------------------------------------------------------------------
+NaNChecker::check_every   =  1
+NaNChecker::check_vars = "
+            ADMBase::curv 
+            ADMBase::metric 
+            ADMBase::lapse 
+            ADMBase::shift 
+            HydroBase::rho 
+            HydroBase::eps 
+            HydroBase::press 
+            HydroBase::vel
+            HydroBase::w_lorentz
+"
+NaNChecker::action_if_found   =  "terminate"
+
+
+#------------------------------------------------------------------------------
+# Run parameters:
+#------------------------------------------------------------------------------
+
+#------
+# Grid:
+#------
+
+Time::dtfac = 0.125
+MoL::ODE_Method             = "rk65"
+MoL::MoL_Intermediate_Steps = 8
+MoL::MoL_Num_Scratch_Levels = 8
+
+CartGrid3D::type         = "coordbase"
+CartGrid3D::domain       = "full"
+CartGrid3D::avoid_origin = "no"
+
+CoordBase::domainsize       = "minmax"
+CoordBase::spacing          = "gridspacing"  # "gridspacing" or "numcells"
+
+CoordBase::xmin = -1.5
+CoordBase::ymin = -0.05
+CoordBase::zmin = -0.05
+CoordBase::xmax =  1.5 
+CoordBase::ymax =  0.05
+CoordBase::zmax =  0.05
+
+#in this way the ghost/boundary points are outside the physical domain
+CoordBase::boundary_size_x_lower        = 5
+CoordBase::boundary_size_y_lower        = 5
+CoordBase::boundary_size_z_lower        = 5
+CoordBase::boundary_size_x_upper        = 5
+CoordBase::boundary_size_y_upper        = 5
+CoordBase::boundary_size_z_upper        = 5
+
+#the shiftout is defined in this way so that -0.5 and 0.5 are the same point
+# (i.e., we have the topology of a circle of lenght equal to 1)
+# in this way xmin is inside the physical domain, while xmax is the first boundary point
+CoordBase::boundary_shiftout_x_lower    = 1
+CoordBase::boundary_shiftout_y_lower    = 1
+CoordBase::boundary_shiftout_z_lower    = 1
+CoordBase::boundary_shiftout_x_upper    = 0
+CoordBase::boundary_shiftout_y_upper    = 0
+CoordBase::boundary_shiftout_z_upper    = 0
+
+##grid spacing
+CoordBase::dx   = 0.06   # dx or ncells_x
+CoordBase::dy   = 0.01     # dy or ncells_y
+CoordBase::dz   = 0.01     # dz or ncells_z
+
+Driver::ghost_size                  = 5
+Spritz::Spritz_stencil             = 5
+
+# General Carpet parameters:
+Carpet::domain_from_coordbase    = "yes"
+
+CarpetLib::poison_new_memory         = "yes"
+CarpetLib::poison_value              = 114
+
+#------
+# MODEL:
+#------
+
+
+Spritz_InitData::Spritz_initial_data = "simple-wave"
+
+Spritz_InitData::rho2D_in            = 1.0
+Spritz_InitData::P2D_in              = 0.0
+Spritz_InitData::Bx2D_init           = 0.0
+Spritz_InitData::velx_init           = 0.0
+
+ADMBase::metric_type             = "physical"
+ADMBase::initial_data            = "Cartesian Minkowski"
+ADMBase::initial_lapse           = "one"
+ADMBase::initial_shift           = "zero"
+ADMBase::initial_dtlapse         = "none"
+ADMBase::initial_dtshift         = "none"
+
+#----------
+# Numerics:
+#----------
+Boundary::radpower                     = 2
+HydroBase::timelevels            = 2
+SpaceMask::use_mask      = "yes"
+
+#-----------
+# Evolution:
+#-----------
+
+HydroBase::evolution_method       = "Spritz"
+
+Spritz::recon_method              = "weno-z" 
+Spritz::flux_type                 = "HLLE"
+SPritz::high_order					 = "yes"
+Spritz::approximation_order		 = 6
+Spritz::bound                     = "flat"
+Spritz::con2prim_mhd_method       = "Noble"
+Spritz::Spritz_mhd_tolf           = 1.0e-13
+Spritz::Spritz_countmax           = 100
+Spritz::Spritz_check_divB         = "yes"
+Spritz::zero_slope_fix            = "no" #"yes"
+Spritz::prolongation_type_MHD     = "none"                  # CHECK # "restrict"
+Spritz::Spritz_mhd_fluxCD_Lorenz  = "no" #"yes" 
+Spritz::lorenz_damp_fac           = 0.0d0 #120.0 #750.0d0 #1.5/dt_coarse
+Spritz::Spritz_Avec_Staggered     = "yes"
+Spritz::Spritz_Extr_OB_Avec_Psi   = "no"    
+Spritz::rho_abs_min 		  = 1.0d-12
+
+Spritz::Spritz_NaN_verbose        = 0
+
+
+#-------
+# EOS
+#-------
+EOS_Omni::poly_K     = 100.0
+EOS_Omni::poly_gamma = 5./3.
+EOS_Omni::gl_K       = 100.0
+EOS_Omni::gl_gamma   = 5./3.
+
+
+
+#------------------------------------------------------------------------------
+# Output:
+#------------------------------------------------------------------------------
+
+IO::out_dir             = $parfile
+IO::out_group_separator = "-"
+IO::parfile_write       = "no"
+IO::out_fileinfo        = "none"
+
+IOBasic::outInfo_every = 10
+IOBasic::outInfo_reductions = "minimum maximum" # 
+IOBasic::outInfo_vars  = "
+ Carpet::physical_time_per_hour
+ #HydroBase::press
+ HydroBase::rho
+"
+
+
+#Set these IOASCII options for initial data only:
+IOASCII::out1D_every     = 10
+IOASCII::out1D_d         = "no"
+IOASCII::out1D_y         = "no"
+IOASCII::out1D_z         = "no"
+IOASCII::out1D_vars      = "
+ HydroBase::vel
+ HydroBase::press
+ HydroBase::rho
+"
+
+

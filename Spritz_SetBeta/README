@@ -1,0 +1,19 @@
+Cactus Code Thorn Spritz_SetBeta
+Author(s)    : Lorenzo Sala <l.sala38@campus.unimib.it>
+Maintainer(s): Lorenzo Sala <l.sala38@campus.unimib.it>
+Licence      : GPL
+--------------------------------------------------------------------------
+
+1. Purpose
+
+Set beta-equilibrated temperature and electron fraction, using EoS slices produced by the python routine 'SlicerAndConverter'. Make sure that you're using the same EoS that has been using for generating initial data.
+
+
+2. How to use it
+
+In parfile, you need to set some parameters:
+    Spritz_SetBeta::beta_datafile    = [Path to EoS slice, e.g. [...]/EosName/eos]
+    EOS_Omni::nuceos_table_name      = [Path to .h5 eos in stellarcollapse format]
+    HydroBase::initial_temperature   = "Spritz_SetBeta"
+    HydroBase::initial_Y_e           = "Spritz_SetBeta"
+    HydroBase::initial_entropy       = "Spritz_SetBeta"

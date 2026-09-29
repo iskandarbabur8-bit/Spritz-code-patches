@@ -1,0 +1,47 @@
+# Schedule definitions for thorn Recovery_Util
+
+############################################################
+### For recovery flag.
+############################################################
+
+STORAGE:Recovery_Flag
+
+schedule Recovery_INIT AT WRAGH
+{
+    LANG: Fortran
+    OPTIONS: GLOBAL
+} "Initialization of Recovery_Flag."
+
+if (Use_Recovery_Flag)
+{
+    schedule Recovery_Set AT RECOVER_VARIABLES
+    {
+	LANG: Fortran
+	OPTIONS: GLOBAL-EARLY
+    } "We set Recovery_Flag=1(i.e., TRUE)."
+}
+
+if (Use_Recovery_Flag)
+{
+    schedule Recovery_Reset AT POST_RECOVER_VARIABLES AFTER (Whisky_MHD_OutsideMask_Init,Whisky_EOSHandle,Whisky_Change_Rho_Minimum_At_Recovery,Whisky_InitFindMaxima,MoL_PostStep,HydroBase_PostStep,Con2Prim,HydroBase_Con2Prim,SetTmunu)
+#    schedule Recovery_Reset AT CCTK_PREREGRID
+    {
+	LANG: Fortran
+	OPTIONS: GLOBAL-LATE
+    } "We reset Recovery_Flag=0(i.e., FALSE)."
+}
+
+############################################################
+### For synchronization before creating checkpoint files.
+############################################################
+
+schedule GROUP Recovery_Sync_BeforeCheckpoint AT CPINITIAL  BEFORE CarpetIOHDF5_InitialDataCheckpoint
+{} "synchronization before creating checkpoint files"
+
+schedule GROUP Recovery_Sync_BeforeCheckpoint AT CHECKPOINT BEFORE CarpetIOHDF5_EvolutionCheckpoint
+{} "synchronization before creating checkpoint files"
+
+schedule GROUP Recovery_Sync_BeforeCheckpoint AT TERMINATE  BEFORE CarpetIOHDF5_TerminationCheckpoint
+{} "synchronization before creating checkpoint files"
+
+############################################################

@@ -1,0 +1,32 @@
+# Schedule definitions for thorn Spritz_SetBeta
+
+SCHEDULE Spritz_SetBeta_check_parameters AT paramcheck
+{
+  LANG: C
+} "Check parameters"
+
+if (CCTK_EQUALS (initial_temperature, "Spritz_SetBeta") &&
+    CCTK_EQUALS (initial_Y_e,         "Spritz_SetBeta"))
+{
+  if(CCTK_EQUALS (beta_df_format,"Compose")){
+    SCHEDULE Spritz_SetBetaEquilibrium IN HydroBase_Initial AFTER ID_NrotStar_initialise AFTER Meudon_Bin_NS_initialise BEFORE Spritz_Initial
+    {
+      LANG: C
+    } "Set up temperature and electron fraction reading from file in Compose format"
+  }  
+
+  if(CCTK_EQUALS (beta_df_format,"Lorene")){
+    SCHEDULE Spritz_SetBetaEquilibrium_Lorene IN HydroBase_Initial AFTER ID_NrotStar_initialise AFTER Meudon_Bin_NS_initialise BEFORE Spritz_Initial
+    {
+      LANG: C
+    } "Set up temperature and electron fraction reading from file in Lorene format"
+  }
+  
+  if(SetPressure)
+  {
+    SCHEDULE Spritz_SetPressure IN HydroBase_Initial AFTER Spritz_SetBetaEquilibrium AFTER Spritz_SetBetaEquilibrium_Lorene BEFORE Spritz_Initial
+    {
+      LANG: C
+    } "Set up initial pressure, using EoS_Omni."
+  }
+}

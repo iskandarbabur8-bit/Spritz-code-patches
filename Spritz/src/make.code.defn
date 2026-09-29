@@ -1,0 +1,45 @@
+# Main make.code.defn file for thorn Hydra
+# $Header$
+
+# Source files in this directory
+
+SRCS = 	Utils.F90 \
+	Interfaces.F90 \
+	nrutil.F90 \
+	nrmodule.F90 \
+	zrhqr.F90 \
+	Spritz_Boundaries.F90 \
+	Spritz_CalcUpdate.F90 \
+	Spritz_EOS.c \
+	Spritz_Flux.F90 \
+	Spritz_Loop.F90 \
+	Spritz_Maxima.F90 \
+	Spritz_Minima.F90 \
+	Spritz_Minima.cc \
+	Spritz_PPM.F90 \
+        Spritz_MINMOD.F90 \
+     Spritz_WENOZ.F90 \
+	Spritz_ParamCheck.F90 \
+	Spritz_PreLoop.F90 \
+	Spritz_Prim2Con.F90 \
+	Spritz_Prim2ConInitial.c \
+	Spritz_Con2PrimM_Noble_pt_EOSOmni.c \
+	Spritz_Reconstruct.F90 \
+	Spritz_ReconstructPoly.F90 \
+	Spritz_RegisterVars.cc \
+	Spritz_RiemannSolve.F90 \
+	Spritz_Scalars.F90 \
+	Spritz_SlopeLimiter.F90 \
+	Spritz_Source.F90 \
+	Spritz_Startup.F90 \
+	Spritz_Con2Prim_MHD.F90	\
+	Spritz_HLLE_MHD.F90 \
+	Spritz_Analysis_MHD.F90 \
+	Spritz_Tmunu.F90 \
+  Spritz_InitZeroVar.F90 \
+  Spritz_Avec_outer_boundaries.C \
+	Spritz_set_Avec_gz_symmetries.c \
+	Spritz_CheckConstrainT.c
+
+# Subdirectories containing source files
+SUBDIRS =

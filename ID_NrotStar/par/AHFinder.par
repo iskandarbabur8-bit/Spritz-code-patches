@@ -1,0 +1,94 @@
+ActiveThorns = "
+  ahfinderdirect
+  spacemask
+  sphericalsurface
+  carpetmask
+"
+
+
+#------------------carpetmask--------------------------------------------------
+
+carpetmask::excluded_surface[0]          = 0
+carpetmask::excluded_surface[1]          = 1
+carpetmask::excluded_surface_factor[0]   = 1
+carpetmask::excluded_surface_factor[1]   = 1
+
+
+
+
+
+
+#------------------spacemask---------------------------------------------------
+
+spacemask::use_mask                      = yes
+
+
+#------------------ahfinderdirect----------------------------------------------
+
+ahfinderdirect::find_after_individual_time[1] = 0
+ahfinderdirect::find_after_individual_time[2] = 0
+
+ahfinderdirect::find_every               = 32 #number of iteration when all reflev are synchronized, i.e., 2^(N-1) where N is the maximum number of reflevel
+ahfinderdirect::output_h_every           = 32
+
+ahfinderdirect::geometry_interpolator_name = "Lagrange polynomial interpolation"
+ahfinderdirect::geometry_interpolator_pars = "order=4"
+ahfinderdirect::initial_guess__coord_sphere__radius[1] = 1
+ahfinderdirect::initial_guess__coord_sphere__radius[2] = 3
+ahfinderdirect::initial_guess__coord_sphere__x_center[1] = 0
+ahfinderdirect::initial_guess__coord_sphere__x_center[2] = 0
+ahfinderdirect::initial_guess__coord_sphere__y_center[1] = 0
+ahfinderdirect::initial_guess__coord_sphere__z_center[1] = 0
+ahfinderdirect::mask_buffer_thickness    = 0
+ahfinderdirect::mask_radius_multiplier   = 0.6
+ahfinderdirect::mask_radius_offset       = 0
+ahfinderdirect::mask_is_noshrink	 = no
+ahfinderdirect::max_allowable_horizon_radius[1] = 15
+ahfinderdirect::max_allowable_horizon_radius[2] = 15
+ahfinderdirect::max_allowable_theta_growth_iterations = 10
+ahfinderdirect::max_allowable_theta_nonshrink_iterations = 10
+ahfinderdirect::max_newton_iterations__initial = 50
+ahfinderdirect::max_newton_iterations__subsequent = 50
+ahfinderdirect::move_origins             = yes
+ahfinderdirect::n_horizons               = 2
+ahfinderdirect::new_style_mask_bitfield_name = "Hydro_Excision"
+ahfinderdirect::new_style_mask_buffer_value = "normal"
+ahfinderdirect::new_style_mask_inside_value = "excised"
+ahfinderdirect::new_style_mask_outside_value = "normal"
+ahfinderdirect::origin_x[1]              = 0
+ahfinderdirect::origin_x[2]              = 0
+ahfinderdirect::predict_origin_movement  = yes
+ahfinderdirect::reset_horizon_after_not_finding[1] = no #yes
+ahfinderdirect::reset_horizon_after_not_finding[2] = no #yes
+ahfinderdirect::reshape_while_moving     = yes
+ahfinderdirect::set_mask_for_all_horizons = yes
+ahfinderdirect::set_new_style_mask       = yes
+ahfinderdirect::set_old_style_mask       = yes
+ahfinderdirect::surface_interpolator_name = "Lagrange polynomial interpolation"
+ahfinderdirect::surface_interpolator_pars = "order=4"
+ahfinderdirect::verbose_level            = "physics details"
+ahfinderdirect::which_surface_to_store_info[1] = 0
+ahfinderdirect::which_surface_to_store_info[2] = 1
+
+
+#------------------sphericalsurface--------------------------------------------
+
+sphericalsurface::nsurfaces              = 2
+
+sphericalsurface::maxnphi                = 240
+sphericalsurface::maxntheta              = 140
+sphericalsurface::nghostsphi[0]          = 2
+sphericalsurface::nghostsphi[1]          = 2
+
+sphericalsurface::nghoststheta[0]        = 2
+sphericalsurface::nghoststheta[1]        = 2
+
+sphericalsurface::nphi[0]                = 96
+sphericalsurface::nphi[1]                = 96
+
+sphericalsurface::ntheta[0]              = 55
+sphericalsurface::ntheta[1]              = 55
+
+sphericalsurface::symmetric_z[0]         = no
+sphericalsurface::symmetric_z[1]         = no
+

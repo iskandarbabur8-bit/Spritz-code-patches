@@ -1,0 +1,20 @@
+# Schedule definitions for thorn ID_NrotStar
+
+if (CCTK_EQUALS (initial_data,    "ID_NrotStar") ||
+    CCTK_EQUALS (initial_lapse,   "ID_NrotStar") ||
+    CCTK_EQUALS (initial_shift,   "ID_NrotStar") ||
+    CCTK_EQUALS (initial_dtlapse, "ID_NrotStar") ||
+    CCTK_EQUALS (initial_dtshift, "ID_NrotStar") ||
+    CCTK_EQUALS (initial_hydro,   "ID_NrotStar") ||
+    CCTK_EQUALS (initial_Bvec,    "ID_NrotStar"))
+{
+  SCHEDULE ID_NrotStar_check_parameters AT paramcheck
+  {
+    LANG: C
+  } "Check parameters"
+
+  SCHEDULE ID_NrotStar_initialise IN HydroBase_Initial
+  {
+    LANG: C
+  } "Set up rotating neutron star initial data"
+}

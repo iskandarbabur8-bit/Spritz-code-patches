@@ -1,0 +1,55 @@
+# Parameter definitions for thorn Spritz_SetBeta
+
+SHARES: HydroBase
+
+EXTENDS KEYWORD initial_temperature
+{
+  "Spritz_SetBeta" :: "Set initial data from beta-equilibrated datasets."
+}
+
+EXTENDS KEYWORD initial_Y_e
+{
+  "Spritz_SetBeta" :: "Set initial data from beta-equilibrated datasets."
+}
+
+EXTENDS KEYWORD initial_entropy
+{
+  "Spritz_SetBeta" :: "Set initial data from beta-equilibrated datasets."
+}
+
+PRIVATE:
+
+STRING beta_df_format "Beta equilibrated initial data format" STEERABLE=RECOVER
+{
+  "Compose" :: "format from the Compose website"
+  "Lorene" :: "format for Lorene"
+} "Compose"
+
+STRING beta_datafile "Beta equilibrated initial data - Compose case: absolute path + Input file name (without extensions); Lorene case: absolute path" STEERABLE=RECOVER
+{
+  "" :: ""
+} ""
+
+BOOLEAN get_EoS_eps "Get specific internal energy from beta-equilibrated EoS (from eos.thermo in Compose format, automatically computed in the Lorene format - unused in the latter case)."
+{
+} "yes"
+
+BOOLEAN SetPressure "Set up initial pressure, using EoS_Omni."
+{
+} "no"
+
+
+# SHARES: GRHydro
+# USES REAL GRHydro_Y_e_min         AS ID_Ye_min
+# USES REAL GRHydro_Y_e_max         AS ID_Ye_max
+# USES REAL rho_abs_min             AS ID_rho_min
+# USES REAL GRHydro_hot_atmo_temp   AS ID_T_min
+# USES REAL GRHydro_max_temp        AS ID_T_max
+SHARES: Spritz
+USES REAL Spritz_Y_e_min         AS ID_Ye_min
+USES REAL Spritz_Y_e_max         AS ID_Ye_max
+USES REAL Spritz_hot_atmo_temp   AS ID_T_min
+USES REAL Spritz_max_temp        AS ID_T_max
+USES REAL rho_abs_min
+USES REAL rho_abs_eos_min
+USES REAL Eos_rf_prec

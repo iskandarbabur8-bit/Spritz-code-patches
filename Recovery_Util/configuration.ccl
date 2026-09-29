@@ -1,0 +1,7 @@
+# Configuration definitions for thorn Recovery_Util
+
+PROVIDES Recovery_Util
+{
+  SCRIPT
+  LANG
+}

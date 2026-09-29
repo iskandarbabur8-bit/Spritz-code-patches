@@ -1,0 +1,40 @@
+Cactus Code Thorn Recovery_Util
+Author(s)    : Kentaro TAKAMI <kentaro.takami@aei.mpg.de>
+Maintainer(s): Kentaro TAKAMI <kentaro.takami@aei.mpg.de>
+Licence      : GPLv3
+--------------------------------------------------------------------------
+
+1. Purpose
+
+This "Recovery_Util" is executed only for the case of recovery.
+Now only one utility is implemented, which is "Recovery_Flag".
+In order to restart the simulation correctly from checkpoint files, 
+this flag is used by Whisky and BSSN_MoL.
+
+The detail scheduling is as follows:
+
+************************************************************
+***   Cactus Schelling
+************************************************************
+
+   if (recover initial data)
+
+      [CCTK_BASEGRID]
+
+      etc..
+
+      [CCTK_RECOVER_VARIABLES]
+
+        IOUtil::IOUtil_RecoverGH: [level] Checkpoint recovery routine
+        Recovery_Util::Recovery_Set: We set Recovery_Flag=1(i.e., TRUE).
+
+      [CCTK_POST_RECOVER_VARIABLES]
+
+        etc...
+      
+        Recovery_Util::Recovery_Reset: We reset Recovery_Flag=0(i.e., FALSE).
+
+   endif
+
+************************************************************
+************************************************************

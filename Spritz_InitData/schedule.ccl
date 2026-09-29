@@ -1,0 +1,254 @@
+# Schedule definitions for thorn Spritz_InitData
+# $Header$
+
+if (CCTK_Equals(Spritz_initial_data,"shocktube")) {
+  schedule Spritz_shocktube in Spritz_Initial
+  {
+    LANG: Fortran
+    SYNC: Spritz_mhd_vector_var
+    SYNC: Spritz_mhd_evolved_var
+    SYNC: Avec_x
+    SYNC: Avec_y
+    SYNC: Avec_z
+  } "Shocktube initial data"
+}
+
+if (CCTK_Equals(Spritz_initial_data,"2DTest")) {
+  
+  schedule Spritz_2DTests_MHD in Spritz_Initial before MoL_FillAllLevels before Mol_PostStep before Spritz_Rho_Minima_Setup_Final
+  {
+    LANG: Fortran
+    SYNC: Spritz_mhd_vector_var
+    SYNC: Spritz_mhd_evolved_var
+    SYNC: Avec_x
+    SYNC: Avec_y
+    SYNC: Avec_z
+  } "2D MHD Tests' initial data"
+}
+
+if (CCTK_Equals(Spritz_initial_data,"3DTest")) {
+  
+  schedule Spritz_3DTests_MHD in Spritz_Initial before MoL_FillAllLevels before Mol_PostStep before Spritz_Rho_Minima_Setup_Final
+  {
+    LANG: Fortran
+    SYNC: Spritz_mhd_vector_var
+    SYNC: Spritz_mhd_evolved_var
+    SYNC: Avec_x
+    SYNC: Avec_y
+    SYNC: Avec_z
+  } "3D MHD Tests' initial data"
+}
+
+if (CCTK_Equals(Spritz_initial_data,"BBH")) {
+  
+  schedule Spritz_BHevoMHD in Spritz_Initial before MoL_FillAllLevels before Mol_PostStep before Spritz_Rho_Minima_Setup_Final
+  {
+    LANG: Fortran
+    SYNC: Spritz_mhd_vector_var
+    SYNC: Spritz_mhd_evolved_var
+    SYNC: Avec_x
+    SYNC: Avec_y
+    SYNC: Avec_z
+  } "BH MHD Tests' initial data"
+}
+
+##if (CCTK_Equals(Spritz_initial_data,"con2primtest")) {
+##  schedule Spritz_con2primtestmhd in Spritz_Initial
+##  {
+##    LANG: Fortran
+##  } "Testing the conservative to primitive solver"
+##}
+
+if (use_alp) {
+  schedule change_alp_beta in ADMBase_PostInitial
+  {
+    LANG: Fortran
+  } "Change the values of lapse and shift"
+}
+
+if (CCTK_Equals(Spritz_initial_data,"TOVMHD")) {
+	 if (tovmhd_timelevels == 3){
+   	STORAGE: ADMBase::lapse[3]
+   	STORAGE: ADMBase::shift[3]
+   	STORAGE: ADMBase::metric[3]
+   	STORAGE: ADMBase::curv[3]
+   	STORAGE: Spritz_mhd_vector_var[3]
+   	STORAGE: Spritz_mhd_evolved_var[3]
+   	STORAGE: Spritz_minima
+	STORAGE: press_sign[3]
+   	}
+  	else
+  	{
+   	STORAGE: ADMBase::lapse[2]
+   	STORAGE: ADMBase::shift[2]
+   	STORAGE: ADMBase::metric[2]
+   	STORAGE: ADMBase::curv[2]
+   	STORAGE: Spritz_mhd_vector_var[2]
+   	STORAGE: Spritz_mhd_evolved_var[2]
+   	STORAGE: Spritz_minima
+	STORAGE: press_sign[2]
+     	}
+
+	STORAGE: max_press
+	STORAGE: max_press_plus
+	STORAGE: max_press_minus
+	STORAGE: Spritz_maxima_iteration
+        STORAGE: Spritz_maxima_location
+        STORAGE: Spritz_maxima_position
+
+    SCHEDULE Spritz_Prim2ConInitial  IN HydroBase_Initial\
+        BEFORE (Spritz_Maxpress_Setup_Final Spritz_Maxpress_Setup_Final_PUGH)\
+        AFTER (TOV_Initial_Data Meudon_Group rnsid_init)
+    {
+        LANG: C
+    } "Initialize the conserved"
+
+	if (CCTK_IsThornActive("PUGH" ))
+	{	
+   		schedule Spritz_Maxpress_Setup_Final_PUGH in HydroBase_Initial after TOV_Initial_Data after Meudon_Group after rnsid_init before Spritz_TOVMHD
+   		{
+     		LANG: C
+   		} "Find the maximum of the pressure used in the definition of the vector potential (PUGH)"
+	}
+else if (CCTK_IsThornActive("Carpet"))
+ 	{
+   	schedule Spritz_Maxpress_Setup_Final in HydroBase_Initial after TOV_Initial_Data after Meudon_Group after rnsid_init before Spritz_TOVMHD before MoL_FillAllLevels before Mol_PostStep before Spritz_Rho_Minima_Setup_Final
+   	{
+     	LANG: C
+  	 } "Find the maximum of the pressure used in the definition of the vector potential (Carpet)"
+	}
+
+  if(compute_DCandMaxima)
+  {
+
+    schedule Spritz_TOVMHD_maxima in HydroBase_Initial after TOV_Initial_Data after rnsid_init after Meudon_Group after Spritz_InitFindMaxima before Spritz_TOVMHD before MoL_FillAllLevels before Mol_PostStep before Spritz_Rho_Minima_Setup_Final
+
+    {
+    LANG: Fortran
+    OPTIONS: local  
+    } "Use Spritz_FindMaxima to locate the maximum of the density"
+  }
+
+  schedule Spritz_TOVMHD in HydroBase_Initial after Spritz_TOVMHD_maxima after TOV_Initial_Data after Meudon_Group after rnsid_init before MoL_FillAllLevels before Mol_PostStep before Spritz_Rho_Minima_Setup_Final
+  {
+    LANG: Fortran
+    SYNC: Spritz_mhd_vector_var
+    SYNC: Spritz_mhd_evolved_var
+    SYNC: Avec_x
+    SYNC: Avec_y
+    SYNC: Avec_z
+  } "Add a poloidal magnetic field to a neutron star"
+
+
+##  schedule Spritz_TOVMHD_output AT INITIAL after Spritz_TOVMHD_maxima after TOV_Initial_Data after Meudon_Group after rnsid_init after Spritz_TOVMHD
+##  {
+##    LANG: Fortran
+##    OPTIONS: level
+##  } "Output routine used for debug"
+
+}
+
+#### Simple Wave Test
+if (CCTK_Equals(Spritz_initial_data, "simple-wave")) {
+	STORAGE: SW_grid_functions
+	STORAGE: SW_scalars		
+	schedule Spritz_SimpleWave in Spritz_Initial
+	{
+		LANG: Fortran
+		SYNC: Spritz_mhd_vector_var
+    	SYNC: Spritz_mhd_evolved_var
+    	SYNC: Avec_x
+    	SYNC: Avec_y
+    	SYNC: Avec_z
+	} "Set initial data for a relativistic simple wave test"
+	
+	STORAGE: SW_output
+	schedule Spritz_SimpleWave_Analysis AT CCTK_ANALYSIS
+	{
+		LANG: Fortran
+	} "Compute some output variables for the Simple Wave"
+	
+}
+
+
+#####ADD Magnetic Field to a Binary System (two neutron stars, one located in x<0 and one in x>0)
+if (CCTK_Equals(Spritz_initial_data,"BNSMHD")) {
+	 if (bnsmhd_timelevels == 3){
+   	STORAGE: ADMBase::lapse[3]
+   	STORAGE: ADMBase::shift[3]
+   	STORAGE: ADMBase::metric[3]
+   	STORAGE: ADMBase::curv[3]
+   	STORAGE: Spritz_mhd_vector_var[3]
+   	STORAGE: Spritz_mhd_evolved_var[3]
+   	STORAGE: Spritz_minima
+	STORAGE: press_sign[3]
+   	}
+  	else
+  	{
+   	STORAGE: ADMBase::lapse[2]
+   	STORAGE: ADMBase::shift[2]
+   	STORAGE: ADMBase::metric[2]
+   	STORAGE: ADMBase::curv[2]
+   	STORAGE: Spritz_mhd_vector_var[2]
+   	STORAGE: Spritz_mhd_evolved_var[2]
+   	STORAGE: Spritz_minima
+	STORAGE: press_sign[2]
+     	}
+
+	STORAGE: max_press
+	STORAGE: max_press_plus
+	STORAGE: max_press_minus
+	STORAGE: Spritz_maxima_iteration
+        STORAGE: Spritz_maxima_location
+        STORAGE: Spritz_maxima_position
+
+    SCHEDULE Spritz_Prim2ConInitial  IN HydroBase_Initial\
+        BEFORE (Spritz_Maxpress_Setup_Final Spritz_Maxpress_Setup_Final_PUGH)\
+        AFTER (TOV_Initial_Data Meudon_Group rnsid_init)
+    {
+        LANG: C
+    } "Initialize the conserved"
+
+	if (CCTK_IsThornActive("PUGH" ))
+	{	
+   		schedule Spritz_Maxpress_Setup_Final_PUGH in HydroBase_Initial after Spritz_BNSMHD_Init after TOV_Initial_Data after Meudon_Group after rnsid_init before Spritz_BNSMHD
+   		{
+     		LANG: C
+   		} "Find the maximum of the pressure used in the definition of the vector potential (PUGH)"
+	}
+else if (CCTK_IsThornActive("Carpet"))
+ 	{
+   	schedule Spritz_Maxpress_Setup_Final in HydroBase_Initial after TOV_Initial_Data after Spritz_BNSMHD_Init after Meudon_Group after rnsid_init before Spritz_BNSMHD before MoL_FillAllLevels before Mol_PostStep before Spritz_Rho_Minima_Setup_Final
+   	{
+     	LANG: C
+  	 } "Find the maximum of the pressure used in the definition of the vector potential (Carpet)"
+	}
+
+
+    schedule Spritz_TOVMHD_maxima in HydroBase_Initial after TOV_Initial_Data after rnsid_init after Meudon_Group after Spritz_InitFindMaxima before Spritz_BNSMHD before MoL_FillAllLevels before Mol_PostStep before Spritz_Rho_Minima_Setup_Final
+
+    {
+    LANG: Fortran
+    OPTIONS: local  
+    } "Use Spritz_FindMaxima to locate the maximum of the density"
+
+    schedule Spritz_BNSMHD_Init in HydroBase_Initial after TOV_Initial_Data after rnsid_init after Meudon_Group after Spritz_InitFindMaxima before Spritz_BNSMHD before MoL_FillAllLevels before Mol_PostStep before Spritz_Rho_Minima_Setup_Final
+
+    {
+    LANG: Fortran
+    OPTIONS: local  
+    } "Use Spritz_FindMaxima to locate the maximum of the density"
+
+
+  schedule Spritz_BNSMHD in HydroBase_Initial after Spritz_TOVMHD_maxima after TOV_Initial_Data after Meudon_Group after rnsid_init before MoL_FillAllLevels before Mol_PostStep before Spritz_Rho_Minima_Setup_Final
+  {
+    LANG: Fortran
+    SYNC: Spritz_mhd_vector_var
+    SYNC: Spritz_mhd_evolved_var
+    SYNC: Avec_x
+    SYNC: Avec_y
+    SYNC: Avec_z
+  } "Add a poloidal magnetic field to a neutron star"
+
+
+}

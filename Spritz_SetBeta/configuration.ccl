@@ -1,0 +1,4 @@
+# Configuration definition for thorn Spritz_SetBeta
+
+REQUIRES EOS_Omni
+REQUIRES LORENE (<=2017-05-08)

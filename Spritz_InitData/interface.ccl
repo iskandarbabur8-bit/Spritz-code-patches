@@ -1,0 +1,239 @@
+# Interface definition for thorn Spritz_InitData
+# $Header$
+
+implements: Spritz_initdata
+inherits: Spritz grid EOS_Omni
+friend: Spritz
+
+USES INCLUDE: SpaceMask.h
+
+
+SUBROUTINE SpatialDet(CCTK_REAL IN gxx, CCTK_REAL IN gxy, \
+                      CCTK_REAL IN gxz, CCTK_REAL IN gyy, \
+		      CCTK_REAL IN gyz, CCTK_REAL IN gzz, \
+		      CCTK_REAL OUT det)
+		      
+SUBROUTINE Prim2ConPoly(CCTK_INT IN handle, \
+                        CCTK_REAL IN gxx, CCTK_REAL IN gxy, CCTK_REAL IN gxz, \
+			CCTK_REAL IN gyy, CCTK_REAL IN gyz, CCTK_REAL IN gzz, \
+			CCTK_REAL IN det, CCTK_REAL OUT dens, \
+			CCTK_REAL OUT sx, CCTK_REAL OUT sy, \
+			CCTK_REAL OUT sz, CCTK_REAL OUT tau, \
+			CCTK_REAL IN rho, CCTK_REAL IN velx, \
+			CCTK_REAL IN vely, \
+			CCTK_REAL IN velz, CCTK_REAL OUT epsilon, \
+			CCTK_REAL OUT press, CCTK_REAL OUT w_lorentz)
+
+
+void FUNCTION Prim2ConPoly_MHD(CCTK_INT IN handle, \
+                           CCTK_REAL IN gxx, CCTK_REAL IN gxy, \
+                           CCTK_REAL IN gxz, CCTK_REAL IN gyy, \
+                           CCTK_REAL IN gyz, CCTK_REAL IN gzz, \
+                           CCTK_REAL IN det, CCTK_REAL OUT dens, \
+                           CCTK_REAL OUT sx, CCTK_REAL OUT sy, \
+                           CCTK_REAL OUT sz, CCTK_REAL OUT tau, \
+                           CCTK_REAL IN rho, CCTK_REAL IN velx, \
+                           CCTK_REAL IN vely, \
+                           CCTK_REAL IN velz, CCTK_REAL OUT epsilon, \
+                           CCTK_REAL OUT press, CCTK_REAL OUT w_lorentz, \
+			   CCTK_REAL IN Bx, CCTK_REAL IN By, \
+                           CCTK_REAL IN Bz, CCTK_REAL OUT dBx, \
+                           CCTK_REAL OUT dBy, CCTK_REAL OUT dBz, \
+                           CCTK_REAL IN alp, CCTK_REAL IN betax, \
+                           CCTK_REAL IN betay, CCTK_REAL IN betaz)
+
+void FUNCTION Prim2ConGen_MHD(CCTK_INT IN handle, \
+                           CCTK_REAL IN gxx, CCTK_REAL IN gxy, \
+                           CCTK_REAL IN gxz, CCTK_REAL IN gyy, \
+                           CCTK_REAL IN gyz, CCTK_REAL IN gzz, \
+                           CCTK_REAL IN det, CCTK_REAL OUT dens, \
+                           CCTK_REAL OUT sx, CCTK_REAL OUT sy, \
+                           CCTK_REAL OUT sz, CCTK_REAL OUT tau, \
+                           CCTK_REAL IN rho, CCTK_REAL IN velx, \
+                           CCTK_REAL IN vely, \
+                           CCTK_REAL IN velz, CCTK_REAL IN epsilon, \
+                           CCTK_REAL OUT press, CCTK_REAL OUT w_lorentz, \
+			   CCTK_REAL IN Bx, CCTK_REAL IN By, \
+                           CCTK_REAL IN Bz, CCTK_REAL OUT dBx, \
+                           CCTK_REAL OUT dBy, CCTK_REAL OUT dBz, \
+                           CCTK_REAL IN alp, CCTK_REAL IN betax, \
+                           CCTK_REAL IN betay, CCTK_REAL IN betaz)
+
+USES FUNCTION SpatialDet
+USES FUNCTION Prim2ConPoly
+USES FUNCTION Prim2ConPoly_MHD
+USES FUNCTION Prim2ConGen_MHD
+
+
+############################################################
+### Functions provided by the general EOS_Omni interface ###
+############################################################
+
+CCTK_INT FUNCTION EOS_Omni_GetHandle(CCTK_STRING IN name)
+
+USES FUNCTION EOS_Omni_GetHandle
+
+void FUNCTION EOS_Omni_pressOMP(CCTK_INT IN eoskey,         \
+			     CCTK_INT IN havetemp,       \
+			     CCTK_REAL IN rf_precision,   \
+                             CCTK_INT IN npoints,        \
+			     CCTK_REAL IN ARRAY rho,     \
+			     CCTK_REAL INOUT ARRAY eps,  \
+			     CCTK_REAL INOUT ARRAY temp, \
+			     CCTK_REAL IN ARRAY ye,      \
+			     CCTK_REAL OUT ARRAY press,  \
+			     CCTK_INT OUT ARRAY keyerr,  \
+			     CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_pressOMP
+
+void FUNCTION EOS_Omni_press(CCTK_INT IN eoskey,         \
+			     CCTK_INT IN havetemp,       \
+			     CCTK_REAL IN rf_precision,   \
+                             CCTK_INT IN npoints,        \
+			     CCTK_REAL IN ARRAY rho,     \
+			     CCTK_REAL INOUT ARRAY eps,  \
+			     CCTK_REAL INOUT ARRAY temp, \
+			     CCTK_REAL IN ARRAY ye,      \
+			     CCTK_REAL OUT ARRAY press,  \
+			     CCTK_INT OUT ARRAY keyerr,  \
+			     CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_press
+
+void FUNCTION EOS_Omni_press_cs2(CCTK_INT IN eoskey,         \
+			     CCTK_INT IN havetemp,       \
+			     CCTK_REAL IN rf_precision,   \
+                             CCTK_INT IN npoints,        \
+			     CCTK_REAL IN ARRAY rho,     \
+			     CCTK_REAL INOUT ARRAY eps,  \
+			     CCTK_REAL INOUT ARRAY temp, \
+			     CCTK_REAL IN ARRAY ye,      \
+			     CCTK_REAL OUT ARRAY press,  \
+			     CCTK_REAL OUT ARRAY cs2,    \
+			     CCTK_INT OUT ARRAY keyerr,  \
+			     CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_press_cs2
+
+
+void FUNCTION EOS_Omni_DPressByDEps(CCTK_INT IN eoskey,      \
+			     CCTK_INT IN havetemp,           \
+			     CCTK_REAL IN rf_precision,       \
+                             CCTK_INT IN npoints,            \
+			     CCTK_REAL IN ARRAY rho,         \
+			     CCTK_REAL INOUT ARRAY eps,      \
+			     CCTK_REAL INOUT ARRAY temp,     \
+			     CCTK_REAL IN ARRAY ye,          \
+			     CCTK_REAL OUT ARRAY dpdepsrho,  \
+			     CCTK_INT OUT ARRAY keyerr,      \
+			     CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_DPressByDEps
+
+
+void FUNCTION EOS_Omni_DPressByDRho(CCTK_INT IN eoskey,         \
+			     CCTK_INT IN havetemp,        	\
+			     CCTK_REAL IN rf_precision,          \
+                             CCTK_INT IN npoints,        	\
+			     CCTK_REAL IN ARRAY rho,     	\
+			     CCTK_REAL INOUT ARRAY eps,  	\
+			     CCTK_REAL INOUT ARRAY temp, 	\
+			     CCTK_REAL IN ARRAY ye,      	\
+			     CCTK_REAL OUT ARRAY dpdrhoeps,  	\
+			     CCTK_INT OUT ARRAY keyerr,  	\
+			     CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_DPressByDRho
+
+void FUNCTION EOS_Omni_dpderho_dpdrhoe(CCTK_INT IN eoskey,         \
+                             CCTK_INT IN havetemp,              \
+                             CCTK_REAL IN rf_precision,         \
+                             CCTK_INT IN npoints,               \
+                             CCTK_REAL IN ARRAY rho,            \
+                             CCTK_REAL INOUT ARRAY eps,         \
+                             CCTK_REAL INOUT ARRAY temp,        \
+                             CCTK_REAL IN ARRAY ye,             \
+                             CCTK_REAL OUT ARRAY dpderho,       \
+                             CCTK_REAL OUT ARRAY dpdrhoe,       \
+                             CCTK_INT OUT ARRAY keyerr,         \
+                             CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_dpderho_dpdrhoe
+
+void FUNCTION EOS_Omni_cs2(CCTK_INT IN eoskey,                  \
+			     CCTK_INT IN havetemp,              \
+			     CCTK_REAL IN rf_precision,          \
+                             CCTK_INT IN npoints,               \
+			     CCTK_REAL IN ARRAY rho,     	\
+			     CCTK_REAL INOUT ARRAY eps,  	\
+			     CCTK_REAL INOUT ARRAY temp, 	\
+			     CCTK_REAL IN ARRAY ye,      	\
+			     CCTK_REAL OUT ARRAY cs2,  		\
+			     CCTK_INT OUT ARRAY keyerr,   	\
+                             CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_cs2
+
+void FUNCTION EOS_Omni_EpsFromPress(CCTK_INT IN eoskey,         \
+			     CCTK_INT IN havetemp,        	\
+			     CCTK_REAL IN rf_precision,          \
+                             CCTK_INT IN npoints,        	\
+			     CCTK_REAL IN ARRAY rho,     	\
+			     CCTK_REAL INOUT ARRAY eps,  	\
+			     CCTK_REAL INOUT ARRAY temp, 	\
+			     CCTK_REAL IN ARRAY ye,      	\
+			     CCTK_REAL IN ARRAY press,  	\
+			     CCTK_REAL OUT ARRAY xeps,  	\
+			     CCTK_INT OUT ARRAY keyerr,   	\
+                             CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_EpsFromPress
+
+
+protected:
+
+real max_press type = SCALAR "The maximum of the pressure at t=0"
+real max_press_plus type = SCALAR "The maximum of the pressure at t=0 in x>0"
+real max_press_minus type = SCALAR "The maximum of the pressure at t=0 in x<0"
+
+
+# Defining some variables for the Simple Wave test (using GRHydro as a model)
+
+CCTK_REAL SW_grid_functions TYPE=GF TIMELEVELS=1 tags='checkpoint="no"'
+{
+	simple_tmp 
+	c_s 
+} "1D arrays for the simple-wave routine"
+
+CCTK_REAL SW_scalars TYPE=scalar
+{
+	simple_rho_0
+	simple_eps_0
+} "values at v=0"
+
+CCTK_REAL SW_output TYPE=GF TIMELEVELS=1 tags='checkpoint="no"'
+{
+	simple_rho
+	simple_eps
+} "output variables for the simple-wave routine"
+
+private:
+
+# For measuring separations
+
+CCTK_INT Spritz_maxima_location TYPE=SCALAR tags='checkpoint="no"'
+{
+  maxima_i_plus
+  maxima_j_plus
+  maxima_k_plus
+  maxima_i_minus
+  maxima_j_minus
+  maxima_k_minus
+} "The location (point index) of the maximum value of rho"
+
+CCTK_INT Spritz_maxima_iteration TYPE=SCALAR "Iteration on which maximum was last set"
+
+int Spritz_init_data_reflevel type = SCALAR tags='checkpoint="no"' "Refinement level Spritz is working on right now"
+
+CCTK_REAL press_sign type = GF Timelevels = 3 tags='ProlongationParameter="HydroBase::prolongation_type" tensortypealias="Scalar" interpolator="matter"' "gas pressure*sign(x)"

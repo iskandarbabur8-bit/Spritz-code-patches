@@ -1,0 +1,533 @@
+
+# Interface definition for thorn Spritz
+# $Header$
+
+implements: Spritz
+inherits: ADMBase, StaticConformal, Boundary, ADMMacros, TmunuBase, HydroBase, Recovery_Util
+friend: ADMCoupling
+
+# USES INCLUDE: EOS_Base.inc
+# USES INCLUDE: EOS_Base.h
+
+USES INCLUDE HEADER: carpet.hh
+
+void FUNCTION SpatialDet(CCTK_REAL IN gxx, CCTK_REAL IN gxy, \
+                         CCTK_REAL IN gxz, CCTK_REAL IN gyy, \
+                         CCTK_REAL IN gyz, CCTK_REAL IN gzz, \
+                         CCTK_REAL OUT det)
+
+void FUNCTION UpperMet(CCTK_REAL OUT uxx, CCTK_REAL OUT uxy, \
+                       CCTK_REAL OUT uxz, CCTK_REAL OUT uyy, \
+                       CCTK_REAL OUT uyz, CCTK_REAL OUT uzz, \
+                       CCTK_REAL IN det, CCTK_REAL IN gxx, CCTK_REAL IN gxy, \
+                       CCTK_REAL IN gxz, CCTK_REAL IN gyy, CCTK_REAL IN gyz, \
+                       CCTK_REAL IN gzz)
+
+
+
+void FUNCTION Prim2ConPoly_MHD(CCTK_INT IN handle, \
+                           CCTK_REAL IN gxx, CCTK_REAL IN gxy, \
+                           CCTK_REAL IN gxz, CCTK_REAL IN gyy, \
+                           CCTK_REAL IN gyz, CCTK_REAL IN gzz, \
+                           CCTK_REAL IN det, CCTK_REAL OUT dens, \
+                           CCTK_REAL OUT sx, CCTK_REAL OUT sy, \
+                           CCTK_REAL OUT sz, CCTK_REAL OUT tau, \
+                           CCTK_REAL IN rho, CCTK_REAL IN velx, \
+                           CCTK_REAL IN vely, \
+                           CCTK_REAL IN velz, CCTK_REAL OUT epsilon, \
+                           CCTK_REAL OUT press, CCTK_REAL OUT w_lorentz, \
+                           CCTK_REAL IN Bx, CCTK_REAL IN By, \
+                           CCTK_REAL IN Bz, CCTK_REAL OUT dBx, \
+                           CCTK_REAL OUT dBy, CCTK_REAL OUT dBz, \
+                           CCTK_REAL IN alp, CCTK_REAL IN betax, \
+                           CCTK_REAL IN betay, CCTK_REAL IN betaz)
+
+void FUNCTION Prim2ConGen_MHD(CCTK_INT IN handle, \
+                           CCTK_REAL IN gxx, CCTK_REAL IN gxy, \
+                           CCTK_REAL IN gxz, CCTK_REAL IN gyy, \
+                           CCTK_REAL IN gyz, CCTK_REAL IN gzz, \
+                           CCTK_REAL IN det, CCTK_REAL OUT dens, \
+                           CCTK_REAL OUT sx, CCTK_REAL OUT sy, \
+                           CCTK_REAL OUT sz, CCTK_REAL OUT tau, \
+                           CCTK_REAL IN rho, CCTK_REAL IN velx, \
+                           CCTK_REAL IN vely, \
+                           CCTK_REAL IN velz, CCTK_REAL IN epsilon, \
+                           CCTK_REAL OUT press, CCTK_REAL OUT w_lorentz, \
+                           CCTK_REAL IN Bx, CCTK_REAL IN By, \
+                           CCTK_REAL IN Bz, CCTK_REAL OUT dBx, \
+                           CCTK_REAL OUT dBy, CCTK_REAL OUT dBz, \
+                           CCTK_REAL IN alp, CCTK_REAL IN betax, \
+                           CCTK_REAL IN betay, CCTK_REAL IN betaz)
+
+void FUNCTION Prim2ConGen_Hot_MHD(CCTK_INT IN handle, CCTK_INT IN Constrain_Temp_now, CCTK_INT IN reflevel, \
+                          CCTK_REAL IN x, CCTK_REAL IN y, CCTK_REAL IN z, \
+                          CCTK_REAL IN gxx, CCTK_REAL IN gxy, \
+                          CCTK_REAL IN gxz, CCTK_REAL IN gyy, \
+                          CCTK_REAL IN gyz, CCTK_REAL IN gzz, \
+                          CCTK_REAL IN det, CCTK_REAL OUT dens, \
+                          CCTK_REAL OUT sx, CCTK_REAL OUT sy, \
+                          CCTK_REAL OUT sz, CCTK_REAL OUT tau, \
+                          CCTK_REAL IN rho, CCTK_REAL IN velx, \
+                          CCTK_REAL IN vely, \
+                          CCTK_REAL IN velz, CCTK_REAL INOUT epsilon, \
+                          CCTK_REAL OUT press, CCTK_REAL OUT w_lorentz, \
+                          CCTK_REAL IN Bx, CCTK_REAL IN By, \
+                          CCTK_REAL IN Bz, CCTK_REAL OUT dBx, \
+                          CCTK_REAL OUT dBy, CCTK_REAL OUT dBz, \
+                          CCTK_REAL IN alp, CCTK_REAL IN betax, \
+                          CCTK_REAL IN betay, CCTK_REAL IN betaz, \
+                          CCTK_REAL INOUT temp, CCTK_REAL IN y_e)
+
+PROVIDES FUNCTION SpatialDet WITH SpatialDeterminant LANGUAGE Fortran
+PROVIDES FUNCTION UpperMet WITH UpperMetric LANGUAGE Fortran
+PROVIDES FUNCTION Prim2ConPoly_MHD WITH prim2conpolytype_mhd LANGUAGE Fortran
+PROVIDES FUNCTION Prim2ConGen_MHD WITH prim2con_mhd LANGUAGE Fortran
+PROVIDES FUNCTION Prim2ConGen_Hot_MHD WITH prim2con_mhd_hot LANGUAGE Fortran
+
+####################################################
+###  Functions provided by MoL for registration  ###
+####################################################
+
+CCTK_INT FUNCTION MoLRegisterEvolved(CCTK_INT IN EvolvedIndex, \
+                                         CCTK_INT IN RHSIndex)
+CCTK_INT FUNCTION MoLRegisterConstrained(CCTK_INT IN ConstrainedIndex)
+CCTK_INT FUNCTION MoLRegisterEvolvedGroup(CCTK_INT IN EvolvedIndex, \
+                                          CCTK_INT IN RHSIndex)
+CCTK_INT FUNCTION MoLRegisterConstrainedGroup(CCTK_INT IN ConstrainedIndex)
+CCTK_INT FUNCTION MoLRegisterSaveAndRestoreGroup(CCTK_INT IN SandRIndex)
+
+USES FUNCTION MoLRegisterEvolved
+USES FUNCTION MoLRegisterConstrained
+USES FUNCTION MoLRegisterEvolvedGroup
+USES FUNCTION MoLRegisterConstrainedGroup
+USES FUNCTION MoLRegisterSaveAndRestoreGroup
+
+#########################################
+###  Aliased functions from Boundary  ###
+#########################################
+
+CCTK_INT FUNCTION Boundary_SelectVarForBC(CCTK_POINTER_TO_CONST IN GH, \
+  CCTK_INT IN faces, CCTK_INT IN boundary_width, CCTK_INT IN table_handle, \
+  CCTK_STRING IN var_name, CCTK_STRING IN bc_name)
+CCTK_INT FUNCTION Boundary_SelectGroupForBC(CCTK_POINTER_TO_CONST IN GH, \
+  CCTK_INT IN faces, CCTK_INT IN boundary_width, CCTK_INT IN table_handle, \
+  CCTK_STRING IN group_name, CCTK_STRING IN bc_name)
+
+USES FUNCTION Boundary_SelectVarForBC
+USES FUNCTION Boundary_SelectGroupForBC
+
+############################################################
+### Functions provided by the general EOS_Omni interface ###
+############################################################
+
+CCTK_INT FUNCTION EOS_Omni_GetHandle(CCTK_STRING IN name)
+
+USES FUNCTION EOS_Omni_GetHandle
+
+void FUNCTION EOS_Omni_pressOMP(CCTK_INT IN eoskey,         \
+			     CCTK_INT IN havetemp,       \
+			     CCTK_REAL IN rf_precision,   \
+                             CCTK_INT IN npoints,        \
+			     CCTK_REAL IN ARRAY rho,     \
+			     CCTK_REAL INOUT ARRAY eps,  \
+			     CCTK_REAL INOUT ARRAY temp, \
+			     CCTK_REAL IN ARRAY ye,      \
+			     CCTK_REAL OUT ARRAY press,  \
+			     CCTK_INT OUT ARRAY keyerr,  \
+			     CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_pressOMP
+
+void FUNCTION EOS_Omni_press(CCTK_INT IN eoskey,         \
+			     CCTK_INT IN havetemp,       \
+			     CCTK_REAL IN rf_precision,   \
+                             CCTK_INT IN npoints,        \
+			     CCTK_REAL IN ARRAY rho,     \
+			     CCTK_REAL INOUT ARRAY eps,  \
+			     CCTK_REAL INOUT ARRAY temp, \
+			     CCTK_REAL IN ARRAY ye,      \
+			     CCTK_REAL OUT ARRAY press,  \
+			     CCTK_INT OUT ARRAY keyerr,  \
+			     CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_press
+
+void FUNCTION EOS_Omni_press_cs2(CCTK_INT IN eoskey,         \
+			     CCTK_INT IN havetemp,       \
+			     CCTK_REAL IN rf_precision,   \
+                             CCTK_INT IN npoints,        \
+			     CCTK_REAL IN ARRAY rho,     \
+			     CCTK_REAL INOUT ARRAY eps,  \
+			     CCTK_REAL INOUT ARRAY temp, \
+			     CCTK_REAL IN ARRAY ye,      \
+			     CCTK_REAL OUT ARRAY press,  \
+			     CCTK_REAL OUT ARRAY cs2,    \
+			     CCTK_INT OUT ARRAY keyerr,  \
+			     CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_press_cs2
+
+
+void FUNCTION EOS_Omni_DPressByDEps(CCTK_INT IN eoskey,      \
+			     CCTK_INT IN havetemp,           \
+			     CCTK_REAL IN rf_precision,       \
+                             CCTK_INT IN npoints,            \
+			     CCTK_REAL IN ARRAY rho,         \
+			     CCTK_REAL INOUT ARRAY eps,      \
+			     CCTK_REAL INOUT ARRAY temp,     \
+			     CCTK_REAL IN ARRAY ye,          \
+			     CCTK_REAL OUT ARRAY dpdepsrho,  \
+			     CCTK_INT OUT ARRAY keyerr,      \
+			     CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_DPressByDEps
+
+
+void FUNCTION EOS_Omni_DPressByDRho(CCTK_INT IN eoskey,         \
+			     CCTK_INT IN havetemp,        	\
+			     CCTK_REAL IN rf_precision,          \
+                             CCTK_INT IN npoints,        	\
+			     CCTK_REAL IN ARRAY rho,     	\
+			     CCTK_REAL INOUT ARRAY eps,  	\
+			     CCTK_REAL INOUT ARRAY temp, 	\
+			     CCTK_REAL IN ARRAY ye,      	\
+			     CCTK_REAL OUT ARRAY dpdrhoeps,  	\
+			     CCTK_INT OUT ARRAY keyerr,  	\
+			     CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_DPressByDRho
+
+void FUNCTION EOS_Omni_dpderho_dpdrhoe(CCTK_INT IN eoskey,         \
+                             CCTK_INT IN havetemp,              \
+                             CCTK_REAL IN rf_precision,         \
+                             CCTK_INT IN npoints,               \
+                             CCTK_REAL IN ARRAY rho,            \
+                             CCTK_REAL INOUT ARRAY eps,         \
+                             CCTK_REAL INOUT ARRAY temp,        \
+                             CCTK_REAL IN ARRAY ye,             \
+                             CCTK_REAL OUT ARRAY dpderho,       \
+                             CCTK_REAL OUT ARRAY dpdrhoe,       \
+                             CCTK_INT OUT ARRAY keyerr,         \
+                             CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_dpderho_dpdrhoe
+
+void FUNCTION EOS_Omni_cs2(CCTK_INT IN eoskey,                  \
+			     CCTK_INT IN havetemp,              \
+			     CCTK_REAL IN rf_precision,          \
+                             CCTK_INT IN npoints,               \
+			     CCTK_REAL IN ARRAY rho,     	\
+			     CCTK_REAL INOUT ARRAY eps,  	\
+			     CCTK_REAL INOUT ARRAY temp, 	\
+			     CCTK_REAL IN ARRAY ye,      	\
+			     CCTK_REAL OUT ARRAY cs2,  		\
+			     CCTK_INT OUT ARRAY keyerr,   	\
+                             CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_cs2
+
+void FUNCTION EOS_Omni_EpsFromPress(CCTK_INT IN eoskey,         \
+			     CCTK_INT IN havetemp,        	\
+			     CCTK_REAL IN rf_precision,          \
+                             CCTK_INT IN npoints,        	\
+			     CCTK_REAL IN ARRAY rho,     	\
+			     CCTK_REAL INOUT ARRAY eps,  	\
+			     CCTK_REAL INOUT ARRAY temp, 	\
+			     CCTK_REAL IN ARRAY ye,      	\
+			     CCTK_REAL IN ARRAY press,  	\
+			     CCTK_REAL OUT ARRAY xeps,  	\
+			     CCTK_INT OUT ARRAY keyerr,   	\
+                             CCTK_INT OUT anyerr)
+
+USES FUNCTION EOS_Omni_EpsFromPress
+
+#########################################
+###  Aliased functions from Carpet    ###
+#########################################
+
+CCTK_INT FUNCTION                         \
+    GetRefinementLevel                    \
+        (CCTK_POINTER_TO_CONST IN cctkGH)
+USES FUNCTION GetRefinementLevel
+
+
+public:
+
+int Spritz_eos_scalars type = SCALAR
+{
+  Spritz_eos_handle
+  Spritz_polytrope_handle
+} "Handle number for EOS"
+
+real Spritz_minima type = SCALAR
+{
+  Spritz_rho_min
+  Spritz_Cs2_min
+} "Atmosphere values"
+
+
+real dens type = GF Timelevels = 3 tags='ProlongationParameter="HydroBase::prolongation_type" tensortypealias="Scalar" tensorweight=+1.0 interpolator="matter"' "generalized particle number"
+
+real tau  type = GF Timelevels = 3 tags='ProlongationParameter="HydroBase::prolongation_type" tensortypealias="Scalar" tensorweight=+1.0 interpolator="matter"' "internal energy"
+
+real scon[3] type = GF Timelevels = 3 tags='ProlongationParameter="HydroBase::prolongation_type" tensortypealias="D" tensorweight=+1.0 interpolator="matter"' "generalized momenta"
+
+real Y_e_con type = GF Timelevels = 3 tags='ProlongationParameter="HydroBase::prolongation_type" tensortypealias="Scalar" tensorweight=+1.0 jacobian="inverse_jacobian" interpolator="matter"' "Conserved electron fraction"
+
+real densrhs type = GF Timelevels = 1 tags='Prolongation="None" checkpoint="no"' "Update term for dens"
+real taurhs  type = GF Timelevels = 1 tags='Prolongation="None" checkpoint="no"' "Update term for tau"
+real srhs[3] type = GF Timelevels = 1 tags='Prolongation="None" checkpoint="no"' "Update term for s"
+real rhsppm[5] type = GF Timelevels = 1 tags='Prolongation="None" checkpoint="no"' "RHS used by hybrid methods for hydro"
+
+
+real Spritz_mhd_vector_var type = GF Timelevels = 3 tags='tensortypealias="U" tensorparity=-1 ProlongationParameter="Spritz::prolongation_type_MHD" interpolator="matter"'
+{
+  Bx, By, Bz
+} "Magnetic field components"
+
+real Spritz_mhd_evolved_var type = GF Timelevels = 3 tags='tensortypealias="U" tensorparity=-1 ProlongationParameter="Spritz::prolongation_type_MHD" interpolator="matter"'
+{
+  dBx, dBy, dBz
+} "these are sqrt(det(gamma_ij))*B^k, i.e. the variables evolved by MoL"
+
+real Spritz_mhd_rhs_var type = GF Timelevels = 1 tags='Prolongation="None"'
+{
+  Bxrhs, Byrhs, Bzrhs
+} "Update terms for the magnetic fields variables"
+
+##real Spritz_mhd_Avec_var type = GF Timelevels = 3 tags='tensortypealias="D" ProlongationParameter="HydroBase::prolongation_type"  interpolator="matter"'
+##{
+##  Avec_x, Avec_y, Avec_z
+##} "Vector Potential components"
+
+#Avec_x(i,j+1/2,k+1/2)
+real Avec_x type = GF Timelevels=3 tags='tensortypealias="D"  interpolator="matter" Prolongation="STAGGER011"' "x-component of the Vector Potential" # ProlongationParameter="HydroBase::prolongation_type"
+
+#Avec_y(i+1/2,j,k+1/2)
+real Avec_y type = GF Timelevels=3 tags='tensortypealias="D"  interpolator="matter" Prolongation="STAGGER101"' "y-component of the Vector Potential" # ProlongationParameter="HydroBase::prolongation_type"
+
+#Avec_z(i+1/2,j+1/2,k)
+real Avec_z type = GF Timelevels=3 tags='tensortypealias="D"  interpolator="matter" Prolongation="STAGGER110"' "z-component of the Vector Potential" # ProlongationParameter="HydroBase::prolongation_type"
+
+
+
+##real Spritz_mhd_Avec_rhs_var type = GF Timelevels = 1 tags='Prolongation="None"'
+##{
+##  Avec_x_rhs, Avec_y_rhs, Avec_z_rhs
+##} "Update terms for the vector potential components"
+
+#Avec_x_rhs
+real Avec_x_rhs type = GF Timelevels = 1 tags='Prolongation="None"'
+
+#Avec_y_rhs
+real Avec_y_rhs type = GF Timelevels = 1 tags='Prolongation="None"'
+
+#Avec_z_rhs
+real Avec_z_rhs type = GF Timelevels = 1 tags='Prolongation="None"'
+
+#psi_mhd(i+1/2,j+1/2,k+1/2)
+real psi_mhd type = GF Timelevels = 3 tags='Prolongation="STAGGER111" tensortypealias="Scalar" interpolator="matter"' "Scalar potential (i.e. time component of the quadri-potential)" #ProlongationParameter="HydroBase::prolongation_type"
+
+real psi_mhdrhs type = GF Timelevels = 1 tags='Prolongation="None"' "Update terms for psi_mhd"
+
+real support_arrays_rhs_at_centers type = GF Timelevels = 1 tags='Prolongation="None"'
+{
+Fx, Fy, Fz, Fbetax, Fbetay, Fbetaz, G, Ax_center, Ay_center, Az_center, psi_mhd_center
+} "Arrays supporting calculations for update terms"
+
+real eps_KT type = GF Timelevels = 1 tags='Prolongation="None" checkpoint="no"' "Saturation level for Zrake MacFadyen sub grid model"
+
+CCTK_REAL Spritz_maxima_separation TYPE=SCALAR tags='checkpoint="no"'
+{
+  Spritz_separation
+  Spritz_proper_separation
+} "The distance between the centres (locations of maximum density) of a binary NS"
+
+int evolve_Y_e type = SCALAR tags='checkpoint="no"' "Are we evolving Y_e? Set in Paramcheck"
+int GetTemp_FromThermo type = SCALAR tags='checkpoint="no"' "Are we getting temperature from thermo qties or just advecting it? Set in Paramcheck"
+int Constrain_Temp_now type = SCALAR tags='checkpoint="no"' "Are we constraining temperature in this timestep? Set in Prim2Con"
+
+int Spritz_reflevel type = SCALAR tags='checkpoint="no"' "Refinement level Spritz is working on right now"
+
+
+protected:
+
+CCTK_REAL mhd_c2p_mask type = GF Timelevels = 1 tags='Prolongation="restrict" tensortypealias="Scalar" checkpoint="no"' "Flags to say whether a point was set to atmo because of a failure in c2p"
+
+real Spritz_mhd_E_var type = GF Timelevels = 1 tags='Prolongation="None"'
+{
+  Ex, Ey, Ez
+} "Electric field components located on cells' hedges"
+
+real Spritz_mhd_analysis type=GF Timelevels=1 tags='Prolongation="None" checkpoint="no"'
+{
+divB, divB2, divB_normalized, divB2_normalized, B_norm, b2small, mhd_press_ratio, mhd_energy_ratio, poynting_flux_x, poynting_flux_y, poynting_flux_z, poynting_flux_norm, poynting_vector_x, poynting_vector_y, poynting_vector_z, poynting_scalar, A_norm, lambda_MRI_x, lambda_MRI_y, lambda_MRI_z
+} "Variables used for analysis purposes when magnetic fields are active"
+
+real divA type=GF Timelevels=1 tags='Prolongation="None" checkpoint="no"' "divergence of the vector potential Avec"
+
+real Spritz_mhd_spherical type=GF Timelevels=1 tags='Prolongation="None" checkpoint="no"'
+{
+Bphi, Btheta, Brho, B_Poloidal_norm, B_Toroidal_norm
+} "For decomposition of B field into toroidal (phi) and poloidal parts"
+
+
+real Spritz_EMenergy_temps type=GF timelevels=3 tags='checkpoint="no"' "Temporary variable to compute the EM energy"
+real Spritz_total_magnetic_energy type=SCALAR tags='checkpoint="no"' "Total EM energy"
+
+real Spritz_kinetic_energy_temps type=GF timelevels=3 tags='checkpoint="no"' "Temporary variable to compute the kinetic energy"
+real Spritz_total_kinetic_energy type=SCALAR tags='checkpoint="no"' "Total kinetic energy"
+
+real Spritz_mean_B_numerator_temps type=GF timelevels=3 tags='checkpoint="no"' "Temporary variable to compute the mean field"
+real Spritz_mean_B_numerator type=SCALAR tags='checkpoint="no"' "Numerator used to compute mean field"
+real Spritz_mean_B_denominator_temps type=GF timelevels=3 tags='checkpoint="no"' "Temporary variable to compute the mena field"
+real Spritz_mean_B_denominator type=SCALAR tags='checkpoint="no"' "Denominator used to compute the mean field"
+real Spritz_mean_B type=SCALAR tags='checkpoint="no"' "Mean magnetic field"
+
+real Spritz_mean_B_Tor_numerator_temps type=GF timelevels=3 tags='checkpoint="no"' "Temporary variable to compute the mean toroidal field"
+real Spritz_mean_B_Tor_numerator type=SCALAR tags='checkpoint="no"' "Numerator used to compute mean toroidal field"
+real Spritz_mean_B_Tor_denominator_temps type=GF timelevels=3 tags='checkpoint="no"' "Temporary variable to compute the mean toroidal field"
+real Spritz_mean_B_Tor_denominator type=SCALAR tags='checkpoint="no"' "Denominator used to compute the mean toroidal field"
+real Spritz_mean_B_Tor type=SCALAR tags='checkpoint="no"' "Mean magnetic toroidal field"
+
+real Spritz_mean_B_Pol_numerator_temps type=GF timelevels=3 tags='checkpoint="no"' "Temporary variable to compute the mean poloidal field"
+real Spritz_mean_B_Pol_numerator type=SCALAR tags='checkpoint="no"' "Numerator used to compute mean poloidal field"
+real Spritz_mean_B_Pol type=SCALAR tags='checkpoint="no"' "Mean magnetic poloidal field"
+
+
+real Spritz_turbulent_energy_temps type=GF timelevels=3 tags='checkpoint="no"' "Temporary variable to compute the turbulent energy"
+real Spritz_turbulent_energy type=SCALAR tags='checkpoint="no"' "Total turbulent energy"
+
+#This is the turbulent energy computed only where we amplify the magnetic field
+real Spritz_turbulent_energy_amplification_temps type=GF timelevels=3 tags='checkpoint="no"' "Temporary variable to compute the turbulent energy"
+real Spritz_turbulent_energy_amplification type=SCALAR tags='checkpoint="no"' "Total turbulent energy"
+
+real grid_spacing_product_mhd type=SCALAR tags='checkpoint="no"' "product of cctk_delta_space, to be computed in local mode and later used in global mode (carpet problems)"
+
+
+real Spritz_prim_bext type = GF Timelevels = 1 tags='Prolongation="None" checkpoint="no"'
+{
+  rhoplus, velxplus, velyplus, velzplus, pressplus, epsplus, w_lorentzplus,
+  rhominus, velxminus, velyminus, velzminus, pressminus, epsminus,
+  w_lorentzminus
+} "Primitive variables extended to the cell boundaries"
+
+real Spritz_mhd_bext type = GF Timelevels = 1 tags='Prolongation="None"'
+{
+  Bxplus, Byplus, Bzplus,
+  Bxminus, Byminus, Bzminus,
+  dBxplus, dByplus, dBzplus,
+  dBxminus, dByminus, dBzminus
+} "Magnetic field components extended to the cell boundaries"
+
+int Spritz_scalars type = SCALAR tags='checkpoint="no"'
+{
+  flux_direction, xoffset, yoffset, zoffset
+} "Which direction are we taking the fluxes in and the offsets"
+
+
+
+# For measuring separations
+CCTK_REAL Spritz_maxima_position TYPE=SCALAR
+{
+  maxima_x_plus
+  maxima_y_plus
+  maxima_z_plus
+  maximum_density_plus
+  maxima_x_minus
+  maxima_y_minus
+  maxima_z_minus
+  maximum_density_minus
+} "The position (coordinate values) of the maximum value of rho"
+
+CCTK_REAL maxrho_global TYPE=SCALAR tags='checkpoint="no"' "store the global maximum of rho, for refinment-grid steering"
+CCTK_REAL maxrho_global_plus TYPE=SCALAR tags='checkpoint="no"' "store the maximum of rho on x>0"
+CCTK_REAL maxrho_global_minus TYPE=SCALAR tags='checkpoint="no"' "store the maximum of rho on x<0"
+
+private:
+
+real Spritz_con_bext type = GF Timelevels = 1 tags='Prolongation="None" checkpoint="no"'
+{
+  densplus, sxplus, syplus, szplus, tauplus,
+  densminus, sxminus, syminus, szminus, tauminus
+} "Conservative variables extended to the cell boundaries"
+
+real Spritz_fluxes type = GF Timelevels = 1 tags='Prolongation="None" checkpoint="no"'
+{
+  densflux, sxflux, syflux, szflux, tauflux
+} "Fluxes for each conserved variable"
+
+real Spritz_fluxes_HO type = GF Timelevels = 1 tags='Prolongation="None" checkpoint="no"'
+{
+  dens_HO, sx_HO, sy_HO, sz_HO, tau_HO
+} "Fluxes for each conserved variable for high order approximation"
+
+real Spritz_mhd_fluxes type = GF Timelevels = 1 tags='Prolongation="None" checkpoint="no"'
+{
+  Bxflux, Byflux, Bzflux
+} "Fluxes for each magnetic field component"
+
+
+
+real flux_splitting TYPE=GF tags='Prolongation="None" checkpoint="no"'
+{
+  densfplus, densfminus
+  sxfplus, sxfminus
+  syfplus, syfminus
+  szfplus, szfminus
+  taufplus, taufminus
+} "Fluxes for use in the flux splitting"
+
+real mhd_flux_splitting TYPE=GF tags='Prolongation="None" checkpoint="no"'
+{
+  Bxfplus, Bxfminus
+  Byfplus, Byfminus
+  Bzfplus, Bzfminus
+} "Fluxes of the magnetic field components for use in the flux splitting"
+
+
+real fs_alpha TYPE=SCALAR
+{
+  fs_alpha1
+  fs_alpha2
+  fs_alpha3
+  fs_alpha4
+  fs_alpha5
+} "Maximum characteristic speeds for the flux splitting"
+
+
+##real Spritz_mppm_eigenvalues TYPE=GF tags='Prolongation="None" checkpoint="no"'
+##{
+##  Spritz_mppm_eigenvalue_x_left, Spritz_mppm_eigenvalue_x_right
+##  Spritz_mppm_eigenvalue_y_left, Spritz_mppm_eigenvalue_y_right
+##  Spritz_mppm_eigenvalue_z_left, Spritz_mppm_eigenvalue_z_right
+##  Spritz_mppm_xwind
+##} "debug variable for flux eigenvalues in mppm"
+
+public:
+real Y_e_con_rhs TYPE=GF tags='Prolongation="None" checkpoint="no"' "RHS for the electron fraction"
+real Y_e_con_flux TYPE=GF tags='Prolongation="None" checkpoint="no"' "Flux for the electron fraction"
+private:
+real Y_e_plus TYPE=GF tags='Prolongation="None" checkpoint="no"' "Plus state  for the electron fraction"
+real Y_e_minus TYPE=GF tags='Prolongation="None" checkpoint="no"' "Minus state for the electron fraction"
+real Y_e_HO TYPE=GF tags='Prolongation="None" checkpoint="no"' "High-order storing variable"
+real tempplus TYPE=GF tags='Prolongation="None" checkpoint="no"' "Plus state  for the temperature"
+real tempminus TYPE=GF tags='Prolongation="None" checkpoint="no"' "Minus state for the temperature"
+
+# For measuring separations
+
+CCTK_INT Spritz_maxima_location TYPE=SCALAR tags='checkpoint="no"'
+{
+  maxima_i_plus
+  maxima_j_plus
+  maxima_k_plus
+  maxima_i_minus
+  maxima_j_minus
+  maxima_k_minus
+} "The location (point index) of the maximum value of rho"
+
+CCTK_INT Spritz_maxima_iteration TYPE=SCALAR "Iteration on which maximum was last set"
+
+##CCTK_REAL DiffRho TYPE=GF tags='Prolongation="None" checkpoint="no"' "The first difference in rho"
+
+############################################################

@@ -1,0 +1,18 @@
+# Configuration definition for thorn Spritz
+# $Header$
+
+REQUIRES EOS_Omni Boundary CartGrid3D ADMMacros Recovery_Util #EOS_Base
+
+OPTIONAL_IFACTIVE Carpet
+{
+}
+
+OPTIONAL_IFACTIVE EOS_Polytrope
+{
+}
+
+PROVIDES Spritz
+{
+  SCRIPT
+  LANG
+}

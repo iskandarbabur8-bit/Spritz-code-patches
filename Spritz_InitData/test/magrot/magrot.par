@@ -1,0 +1,232 @@
+#==============================================================================
+# Magnetic Rotor: Spritz_InitData
+#==============================================================================
+
+#------------------------------------------------------------------------------
+# Cactus parameters:
+#------------------------------------------------------------------------------
+Cactus::cctk_run_title = "Magnetic Rotor"
+Cactus::cctk_full_warnings         = "yes"
+
+Cactus::terminate       = "time" #"iteration"
+Cactus::cctk_final_time = 0.1 #10
+
+#------------------------------------------------------------------------------
+# Activate all necessary thorns:
+#------------------------------------------------------------------------------
+
+ActiveThorns = "Boundary CartGrid3D CoordBase Fortran InitBase IOUtil LocalReduce SymBase Time"
+ActiveThorns = "AEILocalInterp LocalInterp"
+ActiveThorns = "MoL Slab SpaceMask"
+ActiveThorns = "Carpet CarpetInterp CarpetIOASCII CarpetIOHDF5 CarpetIOScalar CarpetLib CarpetIOBasic CarpetReduce CarpetSlab LoopControl"
+ActiveThorns = "NaNChecker TerminationTrigger TimerReport"
+ActiveThorns = "ADMbase ADMcoupling ADMmacros CoordGauge StaticConformal"
+ActiveThorns = "Constants TmunuBase HydroBase "
+ActiveThorns = "EOS_Omni"
+ActiveThorns = "Spritz Spritz_InitData"
+ActiveThorns = "HDF5"
+ActiveThorns = "SystemStatistics"
+
+#------------------------------------------------------------------------------
+# Diagnostic parameters:
+#------------------------------------------------------------------------------
+
+Carpet::output_timer_tree_every = 256
+Carpet::output_initialise_timer_tree = "yes"
+Carpet::storage_verbose   = "no"
+Carpet::verbose           = "no"
+Carpet::veryverbose       = "no"
+Carpet::grid_structure_filename = ""
+Carpet::grid_coordinates_filename = ""
+
+CarpetLib::output_bboxes  = "no"
+CarpetLib::print_memstats_every     = 1024
+CarpetLib::memstat_file    = ""
+
+CarpetReduce::verbose    = "no"
+
+TimerReport::out_every    = 0
+TimerReport::out_filename = ""
+TimerReport::n_top_timers = 40
+
+#------------------------------------------------------------------------------
+# Utility parameters:
+#------------------------------------------------------------------------------
+
+NaNChecker::check_every   =  1
+NaNChecker::check_vars = "
+            ADMBase::curv 
+            ADMBase::metric 
+            ADMBase::lapse 
+            ADMBase::shift 
+            HydroBase::Bvec
+            HydroBase::rho 
+            HydroBase::eps 
+            HydroBase::press 
+            HydroBase::vel
+            HydroBase::w_lorentz
+"
+NaNChecker::action_if_found   =  "terminate"
+
+TerminationTrigger::max_walltime = 0.5
+TerminationTrigger::on_remaining_walltime = 10.0   # minutes
+TerminationTrigger::termination_from_file   = "yes"
+TerminationTrigger::create_termination_file = "yes"
+TerminationTrigger::termination_file        = "../TERMINATE"
+
+
+#------------------------------------------------------------------------------
+# Run parameters:
+#------------------------------------------------------------------------------
+
+#------
+# Grid:
+#------
+
+Time::dtfac = 0.25
+MoL::ODE_Method             = "rk4"
+MoL::MoL_Intermediate_Steps = 4
+MoL::MoL_Num_Scratch_Levels = 1
+
+CartGrid3D::type         = "coordbase"
+CartGrid3D::domain       = "full"
+#CartGrid3D::avoid_origin = "no"
+
+CoordBase::domainsize       = "minmax"
+CoordBase::spacing          = "numcells"
+
+# Approximate memory footprint: 530MB
+
+CoordBase::xmin = 0.
+CoordBase::ymin = 0.  #-0.5
+CoordBase::zmin = -0.0125  #-0.025
+CoordBase::xmax = 1.0 #0.5
+CoordBase::ymax = 1.0  #0.5
+CoordBase::zmax = 0.0125 #0.025
+
+CoordBase::ncells_x   = 20 #250  # dx or ncells_x
+CoordBase::ncells_y   = 20 #250  # dy or ncells_y
+CoordBase::ncells_z   = 8  #10   # dz or ncells_z
+
+Driver::ghost_size                  = 3
+Spritz::Spritz_stencil            = 3
+
+# General Carpet parameters:
+Carpet::domain_from_coordbase    = "yes"
+
+CarpetLib::poison_new_memory         = "yes"
+CarpetLib::poison_value              = 114
+
+#------
+# MODEL:
+#------
+
+Spritz_InitData::Spritz_initial_data   = "2DTest"
+Spritz_InitData::twodtest_case         = "MagRot"
+
+Spritz_InitData::Bx2D_init=1.0    # Strong field
+#Spritz_InitData::Bx2D_init=0.1   # Intermediate strength
+#Spritz_InitData::Bx2D_init=0.01   # Weak strength
+
+Spritz_InitData::By2D_init=0.0   # Default
+Spritz_InitData::Bz2D_init=0.0   # Default
+
+Spritz_InitData::xc=0.5
+Spritz_InitData::yc=0.5
+
+Spritz_InitData::R2D_in        = 0.1
+Spritz_InitData::rho2D_in      = 10.0
+Spritz_InitData::P2D_in        = 1.0
+Spritz_InitData::OM2D_in       = 9.95
+#Spritz_InitData::R2D_out       = 1.0 # NOT USED !!!
+Spritz_InitData::rho2D_out     = 1.0
+Spritz_InitData::P2D_out       = 1.0
+Spritz_InitData::OM2D_out      = 0.0
+
+ADMBase::metric_type             = "physical"
+ADMBase::initial_data            = "Cartesian Minkowski"
+ADMBase::initial_lapse           = "one"
+ADMBase::initial_shift           = "zero"
+ADMBase::initial_dtlapse         = "none"
+ADMBase::initial_dtshift         = "none"
+
+#-------
+# EOS
+#-------
+EOS_Omni::poly_K     = 100.0
+EOS_Omni::poly_gamma = 1.66666666666666666666
+EOS_Omni::gl_K       = 100.0
+EOS_Omni::gl_gamma   = 1.66666666666666666666
+
+Spritz::Spritz_eos_type          = "General"
+Spritz::Spritz_eos_table         = "Ideal_Fluid"
+
+#----------
+# Numerics:
+#----------
+
+HydroBase::timelevels            = 2
+SpaceMask::use_mask      = "yes"
+
+#-----------
+# Evolution:
+#-----------
+
+HydroBase::evolution_method      = "Spritz"
+
+#Spritz::ppm_detect                    = "yes"
+Spritz::recon_method             = "minmod"
+Spritz::bound                     = "flat" ###"none"
+Spritz::con2prim_mhd_method           = "Noble" #"Noble"
+Spritz::Spritz_mhd_tolf          = 1.0e-13
+Spritz::Spritz_countmax          = 100
+Spritz::Spritz_check_divB        = "yes"
+Spritz::zero_slope_fix                = "yes"
+Spritz::prolongation_type_MHD = "none"                  # CHECK # "restrict"
+Spritz::Spritz_mhd_fluxCD_Lorenz = "no"
+Spritz::lorenz_damp_fac = 0
+Spritz::Spritz_Avec_Staggered = "yes"
+Spritz::rho_abs_min = 1e-14 # need some reasonable value here, even though no density ever gets this low. This is about the same as GRHydro's default value from rho_central and rho_rel_min
+Spritz::flux_type                     = "HLLE"  ##"LxF"
+
+#
+#------------------------------------------------------------------------------
+# Output:
+#------------------------------------------------------------------------------
+
+IOBasic::outInfo_every      = 1
+IOBasic::outInfo_reductions = "minimum maximum"
+IOBasic::outInfo_vars       = "
+  HydroBase::rho
+  ADMBase::lapse
+  spritz::B_norm
+"
+
+IO::out_dir      = $parfile
+IO::out_fileinfo = "none"
+
+CarpetIOASCII::out1D_d          = "no"
+IOASCII::out1D_every            = 16
+IOASCII::one_file_per_group     = no #yes
+IOASCII::output_symmetry_points = no
+IOASCII::out1D_vars             = "
+ HydroBase::rho
+ HydroBase::press
+ HydroBase::eps
+ HydroBase::vel
+ spritz::Spritz_mhd_vector_var
+ spritz::Spritz_mhd_evolved_var
+ spritz::divB2
+ spritz::B_norm
+ spritz::b2small
+ spritz::mhd_press_ratio
+ spritz::mhd_energy_ratio
+ spritz::A_norm
+ spritz::Avec_x
+ spritz::Avec_y
+ spritz::Avec_z
+ spritz::dens
+ spritz::tau
+ spritz::scon
+"
+

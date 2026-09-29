@@ -1,0 +1,5 @@
+# Interface definition for thorn ID_NrotStar
+
+IMPLEMENTS: ID_NrotStar
+
+INHERITS: grid ADMBase HydroBase

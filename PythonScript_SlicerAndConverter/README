@@ -1,0 +1,21 @@
+**TEMPERATURE SLICING:**
+Codes you need: H5_temperatureslice.py, beta_calc.py, S2C_utilities.py
+Usage: python H5_temperatureslice.py EOS_in_stellar_collapse_format.h5
+
+Output will be saved in the upper directory, in a folder named after the EOS name, followed by 'slice##', where ## stands for the index number of the chosen temperature. Output plots and useful readme will be automatically generated. The output is in Compose format in order to be easily used with LORENE.
+
+
+**ENTROPY SLICING:**
+Codes you need: H5_entropyslice.py, beta_calc.py, S2C_utilities.py
+Usage: python H5_entropyslice.py EOS_in_stellar_collapse_format.h5
+
+Output will be saved in the upper directory, in a folder named after the EOS name, followed by 'entropyslice##', where ## stands for the entropy value in kb/baryon. Output plots and useful readme will be automatically generated. The output is in Compose format in order to be easily used with LORENE.
+
+
+
+---WHAT FOLLOWS NEEDS TO BE CHECKED
+**EASYRUN**
+This script will help you in creating entropy/temperature slices, in creating initial data and in writing the parfile.
+Just call it by:
+  python easyrun PathToEos PathToLorene
+where PathToLorene is the rel/abs path to the folder Lorene

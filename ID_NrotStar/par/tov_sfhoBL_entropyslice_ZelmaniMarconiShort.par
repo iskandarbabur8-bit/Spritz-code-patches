@@ -1,0 +1,348 @@
+# Parameter file for a static TOV star.
+# Initial data are set up using LORENE-nrotstar,
+# with no magnetic field and no rotation.
+
+ActiveThorns = "Time MoL"
+ActiveThorns = "Coordbase CartGrid3d Boundary StaticConformal"
+ActiveThorns = "SymBase ADMBase TmunuBase HydroBase InitBase ADMCoupling ADMMacros"
+ActiveThorns = "IOUtil"
+ActiveThorns = "Formaline"
+ActiveThorns = "SpaceMask CoordGauge Constants LocalReduce aeilocalinterp LoopControl"
+ActiveThorns = "Carpet CarpetLib CarpetReduce CarpetRegrid2 CarpetInterp"
+ActiveThorns = "CarpetIOASCII CarpetIOScalar CarpetIOHDF5 CarpetIOBasic"
+ActiveThorns = "ID_NrotStar EOS_Omni GRHydro"
+
+# Finalize
+Cactus::terminate           = "time"
+Cactus::cctk_final_time     = 10 # divide by ~203 to get ms
+# Cactus::cctk_itlast        = 1
+
+# Termination Trigger
+ActiveThorns = "TerminationTrigger"
+TerminationTrigger::max_walltime = 24.0
+TerminationTrigger::on_remaining_walltime = 30 # minutes
+TerminationTrigger::check_file_every = 64
+TerminationTrigger::termination_file = "TerminationTrigger.txt"
+TerminationTrigger::termination_from_file   = "yes"
+TerminationTrigger::create_termination_file = "yes"
+
+# grid parameters
+Carpet::domain_from_coordbase = "yes"
+CartGrid3D::type         = "coordbase"
+CartGrid3D::domain       = "full"
+CartGrid3D::avoid_origin = "no"
+CoordBase::xmin = 0.0
+CoordBase::ymin = 0.0
+CoordBase::zmin = 0.0
+CoordBase::xmax = 24.0
+CoordBase::ymax = 24.0
+CoordBase::zmax = 24.0
+# Change these parameters to change resolution. The ?max settings above
+# have to be multiples of these. 'dx' is the size of one cell in x-direction.
+# Making this smaller means using higher resolution, because more points will
+# be used to cover the same space.
+CoordBase::dx   =   0.24
+CoordBase::dy   =   0.24
+CoordBase::dz   =   0.24
+
+CarpetRegrid2::regrid_every =   0
+CarpetRegrid2::num_centres  =   1
+CarpetRegrid2::num_levels_1 =   4
+CarpetRegrid2::radius_1[1]  = 15.0  #0.12
+CarpetRegrid2::radius_1[2]  = 10.0  #0.06
+CarpetRegrid2::radius_1[3]  = 7.0  #0.03
+
+
+CoordBase::boundary_size_x_lower        = 3
+CoordBase::boundary_size_y_lower        = 3
+CoordBase::boundary_size_z_lower        = 3
+CoordBase::boundary_size_x_upper        = 3
+CoordBase::boundary_size_y_upper        = 3
+CoordBase::boundary_size_z_upper        = 3
+
+#commenta questi se non metti la simmetria su x e y
+CoordBase::boundary_shiftout_x_lower    = 1
+CoordBase::boundary_shiftout_y_lower    = 1
+CoordBase::boundary_shiftout_x_upper    = 0
+CoordBase::boundary_shiftout_y_upper    = 0
+CoordBase::boundary_shiftout_z_upper    = 0
+
+#e questo se non metti simmetria su z
+CoordBase::boundary_shiftout_z_lower    = 1
+
+ActiveThorns = "ReflectionSymmetry"
+ReflectionSymmetry::reflection_x = "yes" ##
+ReflectionSymmetry::reflection_y = "yes" ##
+ReflectionSymmetry::reflection_z = "yes"
+ReflectionSymmetry::avoid_origin_x = "no"
+ReflectionSymmetry::avoid_origin_y = "no"
+ReflectionSymmetry::avoid_origin_z = "no"
+
+# storage and coupling
+TmunuBase::stress_energy_storage = yes
+TmunuBase::stress_energy_at_RHS  = yes
+TmunuBase::timelevels            =  1
+TmunuBase::prolongation_type     = none
+
+
+HydroBase::timelevels            = 3
+
+ADMMacros::spatial_order = 4
+
+SpaceMask::use_mask      = "yes"
+
+Carpet::enable_all_storage       = no
+Carpet::use_buffer_zones         = "yes"
+
+Carpet::poison_new_timelevels    = "yes"
+Carpet::check_for_poison         = "no"
+
+Carpet::init_3_timelevels        = no
+Carpet::init_fill_timelevels     = "yes"
+
+CarpetLib::poison_new_memory = "yes"
+CarpetLib::poison_value      = 114
+
+# system specific Carpet paramters
+Carpet::max_refinement_levels    = 10
+driver::ghost_size               = 3
+Carpet::prolongation_order_space = 3
+Carpet::prolongation_order_time  = 2
+
+# Time integration
+time::dtfac = 0.35
+
+MoL::ODE_Method             = "rk4"
+MoL::MoL_Intermediate_Steps = 4
+MoL::MoL_Num_Scratch_Levels = 1
+
+# check all physical variables for NaNs
+#  This can save you computing time, so it's not a bad idea to do this
+#  once in a whioe.
+ActiveThorns = "NaNChecker"
+NaNChecker::check_every = 16384
+NaNChecker::action_if_found = "terminate" #"terminate", "just warn", "abort"
+NaNChecker::check_vars = "ADMBase::metric ADMBase::lapse ADMBase::shift HydroBase::rho HydroBase::eps HydroBase::press HydroBase::vel"
+
+# Hydro paramters
+
+# init parameters
+InitBase::initial_data_setup_method = "init_some_levels"
+
+HydroBase::initial_hydro         = "ID_NrotStar"
+ADMBase::initial_data            = "ID_NrotStar"
+ADMBase::initial_lapse           = "ID_NrotStar"
+ADMBase::initial_shift           = "ID_NrotStar"
+ADMBase::initial_dtlapse         = "ID_NrotStar"
+ADMBase::initial_dtshift         = "ID_NrotStar"
+HydroBase::initial_Bvec          = "ID_NrotStar"
+
+ID_NrotStar::filename            = "/marconi/home/userexternal/lsala000/Lorene/Codes/Nrotstar/LS_sfhoBL_sliceent/resu.d"
+ID_NrotStar::beta_datafile       = "/marconi/home/userexternal/lsala000/tov_sfhoBL_initialdata/sfhoBL_entropyslice1/eos"
+
+# Set equation of state for evolution
+GRHydro::EoS_Change				         =	"no"
+EOS_Omni::nuceos_read_table = yes
+EOS_Omni::do_energy_shift = yes
+EOS_Omni::nuceos_table_name = "/marconi/home/userexternal/lsala000/tov_sfhoBL_initialdata/sfhoBL.h5"
+
+#*********************
+HydroBase::initial_temperature   = "ID_NrotStar_BetaEq"
+HydroBase::initial_Y_e           = "ID_NrotStar_BetaEq"
+HydroBase::initial_entropy       = "ID_NrotStar_BetaEq"
+hydrobase::Y_e_evolution_method                  = "GRHydro"
+hydrobase::temperature_evolution_method          = "GRHydro"
+
+GRHydro::GRHydro_c2p_warnlevel 			             = 1
+GRHydro::GRHydro_c2p_warn_from_reflevel		       = 2
+# GRHydro::GRHydro_perc_ptol                       = 1.e-11  # Tolerance for primitive variable solve (percent)
+grhydro::grhydro_eos_rf_prec                     = 1.0e-10  # Precision to which root finding should be carried out
+# grhydro::grhydro_eos_hot_eps_fix                 = yes      # This locally injects heat to prevent failure.
+grhydro::c2p_resort_to_bisection                 = yes # If the pressure guess is unphysical, try with bisection (slower but robust)
+# GRHydro::GRHydro_MaxNumEvolvedVars               = 6
+# GRHydro::GRHydro_MaxNumEvolvedVarsSlow           = 6
+grhydro::grhydro_hot_atmo_temp                   = 0.10
+grhydro::GRHydro_max_temp                        = 100
+# grhydro::grhydro_hot_atmo_Y_e                    = 0.40
+grhydro::grhydro_y_e_min                         = 0.01
+grhydro::grhydro_y_e_max                         = 0.50
+#*********************
+
+# EOS_Omni::poly_gamma                   = 2
+# EOS_Omni::poly_k                       = 148.855
+# EOS_Omni::gl_gamma                     = 2
+# EOS_Omni::gl_k                         = 148.855
+
+HydroBase::evolution_method      = "GRHydro"
+GRHydro::riemann_solver            = "HLLE"
+GRHydro::GRHydro_eos_type          = "General"
+GRHydro::GRHydro_eos_table         = "nuc_eos"
+GRHydro::recon_method              = "ppm"
+GRHydro::GRHydro_stencil            = 3
+GRHydro::bound                     = "none"
+GRHydro::rho_abs_min               = 1.e-10
+GRHydro::GRHydro_atmo_tolerance    = 1.e-3
+GRHydro::sources_spatial_order     = 4
+
+
+# Curvature evolution parameters
+
+ActiveThorns = "GenericFD NewRad"
+ActiveThorns = "ML_BSSN ML_BSSN_Helper"
+ADMBase::evolution_method        = "ML_BSSN"
+ADMBase::lapse_evolution_method  = "ML_BSSN"
+ADMBase::shift_evolution_method  = "ML_BSSN"
+ADMBase::dtlapse_evolution_method= "ML_BSSN"
+ADMBase::dtshift_evolution_method= "ML_BSSN"
+
+ML_BSSN::timelevels = 3
+
+ML_BSSN::harmonicN           = 1      # 1+log
+ML_BSSN::harmonicF           = 2.0    # 1+log
+ML_BSSN::ShiftBCoeff         = 1
+ML_BSSN::ShiftGammaCoeff     = 0.75
+ML_BSSN::BetaDriver          = 2.66
+ML_BSSN::LapseAdvectionCoeff = 0.0
+ML_BSSN::ShiftAdvectionCoeff = 0.0
+
+ML_BSSN::my_initial_boundary_condition = "extrapolate-gammas"
+ML_BSSN::my_rhs_boundary_condition     = "NewRad"
+
+# Some dissipation to get rid of high-frequency noise
+ActiveThorns = "SphericalSurface Dissipation"
+Dissipation::verbose   = "no"
+Dissipation::epsdis   = 0.01
+Dissipation::vars = "
+        ML_BSSN::ML_log_confac
+        ML_BSSN::ML_metric
+        ML_BSSN::ML_curv
+        ML_BSSN::ML_trace_curv
+        ML_BSSN::ML_Gamma
+        ML_BSSN::ML_lapse
+        ML_BSSN::ML_shift
+"
+
+
+# I/O
+
+# cactus::cctk_timer_output = "full"
+
+# Use (create if necessary) an output directory named like the
+# parameter file (minus the .par)
+IO::out_dir             = ${parfile}
+
+# Write one file overall per output (variable/group)
+# In production runs, comment this or set to "proc" to get one file
+# per MPI process
+# RH: 2018-02-10 disable until ticket is addressed: https://trac.einsteintoolkit.org/ticket/2117
+#IO::out_mode            = "onefile"
+
+# Some screen output
+IOBasic::outInfo_every = 16
+IOBasic::outInfo_vars  = "Carpet::physical_time_per_hour HydroBase::rho{reductions='minimum maximum'} HydroBase::temperature{reductions='minimum maximum'}
+  "
+
+# Scalar output
+IOScalar::outScalar_every    = 16
+IOScalar::one_file_per_group = "yes"
+IOScalar::outScalar_reductions = "norm1 norm2 norm_inf sum maximum minimum"
+IOScalar::outScalar_vars     = "
+ HydroBase::rho{reductions='maximum'}
+ HydroBase::press{reductions='maximum'}
+ HydroBase::eps{reductions='minimum maximum'}
+ HydroBase::vel{reductions='minimum maximum'}
+ HydroBase::w_lorentz{reductions='minimum maximum'}
+ HydroBase::temperature{reductions='minimum maximum'}
+ ADMBase::lapse{reductions='minimum maximum'}
+ ADMBase::shift{reductions='minimum maximum'}
+ ML_BSSN::ML_Ham{reductions='norm1 norm2 maximum minimum norm_inf'}
+ ML_BSSN::ML_mom{reductions='norm1 norm2 maximum minimum norm_inf'}
+ GRHydro::dens{reductions='minimum maximum sum'}
+ Carpet::timing{reductions='average'}
+ zelmanileak::zelmani_leak_account_local{reductions='sum'}
+"
+
+
+# 1D ASCII output. Disable for production runs!
+IOASCII::out1D_every        = 16
+IOASCII::one_file_per_group = yes
+IOASCII::output_symmetry_points = no
+IOASCII::out1D_vars         = "
+ HydroBase::rho
+ HydroBase::press
+ HydroBase::eps
+ HydroBase::vel
+ ADMBase::lapse
+ ADMBase::metric
+ ADMBase::curv
+ ML_BSSN::ML_Ham
+ ML_BSSN::ML_mom
+ zelmanileak::zelmani_leak_account_local
+"
+CarpetIOHDF5::one_file_per_group   = yes
+
+# 2D HDF5 output
+CarpetIOHDF5::output_buffer_points = "no"
+CarpetIOHDF5::out2D_every = 16
+CarpetIOHDF5::out2D_vars = "
+ HydroBase::rho
+ HydroBase::eps
+ HydroBase::vel
+ HydroBase::press
+ HydroBase::w_lorentz
+ HydroBase::temperature
+ HydroBase::entropy
+ HydroBase::Y_e
+ ADMBase::lapse
+ ADMBase::shift
+ ADMBase::metric
+ ML_BSSN::ML_Ham
+ ML_BSSN::ML_mom
+ zelmanileak::lum_local[0]
+ zelmanileak::lum_local[1]
+ zelmanileak::lum_local[2]
+ "
+
+# Checkpointing options
+IOHDF5::checkpoint                  = "yes"
+IO::checkpoint_dir                  = $parfile
+IO::recover_dir                     = $parfile
+IO::recover                         = "autoprobe"
+IO::checkpoint_ID                   = "yes"
+IO::checkpoint_every                = 16784
+IO::checkpoint_keep                 = 3
+IO::checkpoint_on_terminate         = "yes"
+
+# Enable to get detailed timing information
+ActiveThorns = "TimerReport"
+TimerReport::out_every    = 4096
+TimerReport::out_filename = "TimerReport"
+TimerReport::output_all_timers_readable = "yes"
+TimerReport::output_all_timers = "yes"
+
+# Enable for profiling
+#Carpet::output_timers_every = 1024
+
+
+
+ActiveThorns = "ZelmaniLeak"
+ZelmaniLeak::force_postmerger = yes
+
+ZelmaniLeak::do_pnu = yes
+ZelmaniLeak::pnu_rho_start = 2.0e12
+ZelmaniLeak::pnu_in_tmunu = yes
+ZelmaniLeak::do_ye_of_rho = no
+
+ZelmaniLeak::update_tau_every = 16
+ZelmaniLeak::do_tau = yes
+ZelmaniLeak::do_heat = yes
+ZelmaniLeak::ntheta = 37
+ZelmaniLeak::nphi = 75
+ZelmaniLeak::nrad = 800
+ZelmaniLeak::rad_max = 8.0
+ZelmaniLeak::nrad_outer = 200
+ZelmaniLeak::rad_max_outer = 24.0
+ZelmaniLeak::symm = "octant"
+ZelmaniLeak::leak_in_premerger = no
+ZelmaniLeak::start_with_clean_tau = no
+ZelmaniLeak::force_tau_interp = no

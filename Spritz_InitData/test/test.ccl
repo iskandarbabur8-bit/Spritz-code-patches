@@ -1,0 +1,75 @@
+ABSTOL 1.e-10
+RELTOL 1.e-10
+
+TEST 01_balsara1_AG
+{
+  NPROCS 1
+}
+
+TEST 02_balsara2_AG
+{
+  NPROCS 1
+}
+
+TEST 03_balsara3_AG
+{
+  NPROCS 1
+}
+
+TEST 04_balsara4_AG
+{
+  NPROCS 1
+}
+
+TEST 04_balsara4_LG
+{
+  NPROCS 1
+}
+
+TEST 05_balsara5_AG
+{
+  NPROCS 1
+}
+
+TEST magrot
+{
+  NPROCS 1
+}
+
+TEST tov_phif
+{
+  NPROCS 1
+}
+
+TEST tov_magnif
+{
+  NPROCS 1
+}
+
+TEST SimpleWave_WH2
+{
+  NPROCS 1
+}
+
+TEST SimpleWave_WH4
+{
+  NPROCS 1
+}
+
+TEST SimpleWave_WH6
+{
+  NPROCS 1
+}
+
+TEST noMagTOV_WH2
+{
+  NPROCS 1
+}
+TEST noMagTOV_WH4
+{
+  NPROCS 1
+}
+TEST noMagTOV_WH6
+{
+  NPROCS 1
+}

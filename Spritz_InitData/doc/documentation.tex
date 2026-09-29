@@ -1,0 +1,112 @@
+\documentclass{article}
+
+\begin{document}
+
+\title{Spritz\_InitData}
+\date{22/10/2015}
+\maketitle
+
+\abstract{Spritz\_InitData - the initial data for the Spritz code}
+
+\section{Introduction}
+\label{sec:intro}
+
+This thorn generates the initial data for the Spritz code. 
+
+
+
+
+
+\subsection{Magnetized Neutron Stars}
+\label{sec:TOVMHD}
+
+It can be useful sometimes to evolve magnetized neutron stars with a
+magnetic field completely contained inside the star. Several
+prescriptions are of course possible and here we have implemented the
+most common one which is based on adding a purely poloidal field
+having the following vector potential in cylindrical coordinates $(r,\phi,z)$:
+%
+\begin{eqnarray}
+  A^r    &=& 0 \\
+  A^\phi &=& A_b r^2 \mathrm{max}(P-P_{cut},0) \\
+  A^z    &=& 0
+\end{eqnarray}
+%
+where $A_b$ define the amplitude of the magnetic field and its value
+is set through the parameter {\tt Ab}. $P_{cut}$ is equivalent to {\tt
+press\_cut}$\times \mathrm{max}(P)$ and {\tt press\_cut} is a real
+positive parameter which define the point inside the star where the
+vector potential goes to zero.
+
+Since Spritz works in cartesian coordinates it is necessary to express
+$A^j$ in cartesian components obtaining the following expressions:
+
+\begin{eqnarray}
+  A^x &=& -r^3 A_b f(P) \mathrm{Sin}(\phi)\\
+  A^y &=&  r^3 A_b f(P) \mathrm{Cos}(\phi)\\
+  A^z &=& 0
+\end{eqnarray}
+
+where $r=\sqrt{(x-x_c)^2+(y-y_c)^2}$,
+$\phi=\mathrm{atan}\left(\frac{y-y_c}{x-x_c}\right)$, $f(P)\equiv
+\mathrm{max}(P-P_{cut},0)$, $x_c$ and $y_c$ are the coordinates of the
+center of the star assumed to be located on the plane $z=0$. The
+position of the center is automatically computed if the parameter {\tt
+Spritz::compute\_DCandMaxima} is set equal to {\tt ``yes''} and it is
+assumed to be coincident with the position of the maximum of the
+rest-mass density $\rho$. Otherwise it is assumed to be located in the
+origin of the grid.
+
+
+The magnetic field components in cartesian coordinates are then simply
+given by $\mathbf{B}=\frac{1}{\sqrt{\gamma}}\nabla \times \mathbf{A}$
+or explicitly:
+
+\begin{eqnarray}
+B^x &=& -\frac{(x-x_c) A_b r^2}{\sqrt{\gamma}} \frac{\partial f(P)}{\partial z} \\
+B^y &=& -\frac{(y-y_c) A_b r^2}{\sqrt{\gamma}} \frac{\partial f(P)}{\partial z} \\
+B^z &=& \frac{A_b r^2}{\sqrt{\gamma}}\left[4f(P)+(y-y_c)\frac{\partial f(P)}{\partial y} +(x-x_c)\frac{\partial f(P)}{\partial x}\right]
+\end{eqnarray}
+%
+where $\gamma$ is the determinant of the three-metric $\gamma_{ij}$.\\
+
+In order to use this initial configuration one has to set:\\ 
+%
+{\tt Spritz\_InitData::Spritz\_initial\_data=''TOVMHD''}.\\
+%
+
+If used with Carpet then the parameter {\tt tovmhd\_timelevels} must
+ be set equal to three.\\ 
+%
+{\bf NOTE: If used with Carpet you may see some small discontinuities
+ (depending also on the resolution you use) in the magnetic field
+ variables in the buffer zones of the finest grids (if the magnetic
+ field crosses the boundary between refinement levels). This is due to
+ the interpolators used for prolongation (ENO or WENO) which are not
+ precise as the lagrangian interpolator.}
+
+{\bf Unit Conversion: to convert the magnetic field from cactus units
+to Gauss one needs simply to multiply by $8.34583 \times 10^{19}$.}
+\begin{thebibliography}{1}
+
+\bibitem{livrevsrrfd}
+J.~M. Mart{\'{\i}} and E.~M{\"u}ller.
+\newblock Numerical hydrodynamics in {S}pecial {R}elativity.
+\newblock {\em Living Rev. Relativity}, {\bf 3}, 1999.
+\newblock [Article in online journal], cited on 31/7/01,
+  http://www.livingreviews.org/Articles/Volume2/1999-3marti/index.html.
+
+\bibitem{hydro1}
+J.~A. Font, M. Miller, W. Suen and M. Tobias.
+\newblock Three Dimensional Numerical General Relativistic
+Hydrodynamics I: Formulations, Methods, and Code Tests
+\newblock {\em Phys. Rev.}, {\bf D61}, 044011, 2000.
+
+\end{thebibliography}
+
+
+\include{interface}
+\include{param}
+\include{schedule}
+
+\end{document}

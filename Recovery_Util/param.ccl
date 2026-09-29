@@ -1,0 +1,7 @@
+# Parameter definitions for thorn Recovery_Util
+
+restricted:
+
+boolean Use_Recovery_Flag "Do you want to use Recovery_Flag?"
+{
+}"yes"

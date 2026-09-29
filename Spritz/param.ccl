@@ -1,0 +1,493 @@
+# Parameter definitions for thorn Spritz
+# $Header$
+
+shares:ADMBase
+
+USES KEYWORD initial_shift ""
+{
+}
+
+USES KEYWORD metric_type ""
+{
+}
+
+
+USES KEYWORD evolution_method         AS ADMBase_evolution_method
+USES KEYWORD lapse_evolution_method   AS ADMBase_lapse_evolution_method
+USES KEYWORD shift_evolution_method   AS ADMBase_shift_evolution_method
+USES KEYWORD dtlapse_evolution_method AS ADMBase_dtlapse_evolution_method
+USES KEYWORD dtshift_evolution_method AS ADMBase_dtshift_evolution_method
+
+
+#########################################
+###  PARAMETRES SHARED FROM InitBase  ###
+#########################################
+
+shares: InitBase
+
+USES KEYWORD initial_data_setup_method
+
+
+#########################################
+###  PARAMETRES SHARED FROM HydroBase ###
+#########################################
+
+shares: HydroBase
+
+USES CCTK_INT timelevels
+USES STRING prolongation_type
+EXTENDS KEYWORD evolution_method ""
+{
+  "Spritz" :: "Use Spritz to evolve the hydro variables"
+}
+EXTENDS KEYWORD Y_e_evolution_method ""
+{
+  "Spritz" :: "Use Spritz to evolve Y_e"
+}
+EXTENDS KEYWORD temperature_evolution_method ""
+{
+  "Spritz" :: "Use Spritz to get temperature from thermo quantities"
+}
+
+
+
+
+#########################################
+###  PARAMETRES SHARED FROM MoL       ###
+#########################################
+
+shares: MethodOfLines
+
+USES CCTK_INT MoL_Num_Evolved_Vars
+USES CCTK_INT MoL_Num_Constrained_Vars
+USES CCTK_INT MoL_Num_SaveAndRestore_Vars
+USES CCTK_INT MoL_Max_Evolved_Array_Size
+USES CCTK_INT MoL_Num_ArrayEvolved_Vars
+
+
+shares: ADMMacros
+
+USES INT spatial_order
+
+
+restricted:
+
+# This can improve the performance on many cores, but may be dangerous
+# (it seems to work in simple testcases, but morde complicated settings may fail)
+# If you encounter strange behavior, switch this OFF
+BOOLEAN sync_conserved_only "Only sync evolved conserved quantities during evolution." STEERABLE = recover
+{
+} no
+
+keyword recon_method "Which reconstruction method to use"
+{
+  "ppm" :: "PPM reconstruction"
+  "minmod" :: "Minmod reconstruction"
+  "weno-z" :: "Weno-Z reconstruction"
+} "ppm"
+
+real weno_eps "Epsilon parameter for WENO-Z in order to avoid division by 0"
+{
+  0.0:* :: "Must be small and positive"
+} 1e-26
+
+keyword con2prim_mhd_method "Which Conservative to Primitive routine to use"
+{
+  "3eqs" :: "Method of Anton et al. 2005"
+  "Noble" :: "C2P scheme from Noble et al 2006, Astrophysical Journal, 641, 626"
+  "Palenzuela" :: "C2P scheme used by Palenzuela et al 2015. If constraining T, 1DNR."
+} "3eqs"
+
+keyword flux_type "Which type of method to use"
+{
+  "HLLE" :: "numerical flux for HLLE"
+  "LxF" :: "Lax-Friedrichs flux - more diffusive"
+} "HLLE"
+
+boolean high_order "Enable high order correction of the Riemann solver?"
+{
+} "no"
+
+int approximation_order "Order of the Riemann solver correction"
+{
+	2 :: "Second order HLLE scheme"
+	4 :: "Fourth order HLLE scheme" # Must use Spritz_stencil = 4
+	6 :: "Sixth order HLLE scheme" # Must use Spritz_stencil = 5
+} 2
+
+boolean ppm_detect "Should the PPM solver use shock detection?"
+{
+} "no"
+
+keyword ppm_flatten "Which flattening procedure should the PPM solver use?"
+{
+  "stencil_3"   :: "our flattening procedure, which requires only stencil 3 and which may work"
+  "stencil_4"   :: "original C&W flattening procedure, which requires stencil 4"
+} "stencil_3"
+
+real ppm_epsilon "Epsilon for PPM zone flattening"
+{
+  0.0: 		:: "Must be positive. Default is from Colella & Woodward"
+} 0.33
+
+real ppm_omega1 "Omega1 for PPM zone flattening"
+{
+  : 		:: "Anything goes. Default is from Colella & Woodward"
+} 0.75
+
+real ppm_omega2 "Omega2 for PPM zone flattening"
+{
+  :		:: "Anything goes. Default is from Colella & Woodward"
+} 10.0
+
+real ppm_omega_tracer "Omega for tracer PPM zone flattening"
+{
+  :		:: "Anything goes. Default is from Plewa & Mueller"
+} 0.50
+
+real ppm_epsilon_shock "Epsilon for PPM shock detection"
+{
+  :		:: "Anything goes. Default is from Colella & Woodward"
+} 0.01
+
+real ppm_eta1 "Eta1 for PPM shock detection"
+{
+  :		:: "Anything goes. Default is from Colella & Woodward"
+} 20.0
+
+real ppm_eta2 "Eta2 for PPM shock detection"
+{
+  :		:: "Anything goes. Default is from Colella & Woodward"
+} 0.05
+
+real ppm_k0 "K0 for PPM shock detection"
+{
+  :		:: "Anything goes. Default suggested by Colella & Woodward is: (polytropic constant)/10.0"
+} 0.2
+
+real ppm_small "A floor used by PPM shock detection"
+{
+  0.0:1.0	:: "In [0,1]"
+} 1.e-7
+
+keyword numerical_viscosity "How to compute the numerical viscosity"
+{
+  "fast"	:: "Fast numerical viscosity"
+  "normal"	:: "Normal numerical viscosity"
+} "fast"
+
+keyword bound "Which boundary condition to use - FIXME"
+{
+  "flat"	:: "Zero order extrapolation"
+  "none"	:: "None"
+  "static"	:: "Static"
+  "scalar"	:: "Constant"
+} "none"
+
+int Spritz_stencil "Width of the stencil"
+{
+  0:		:: "Must be positive"
+} 3
+
+keyword Spritz_eos_type "Type of Equation of State"
+{
+  "Polytype"	:: "P = P(rho) or P = P(eps)"
+  "General"	:: "P = P(rho, eps)"
+} "General"
+
+string Spritz_eos_table "Name for the Equation of State"
+{
+  .*		:: "Can be anything"
+} "Ideal_Fluid"
+
+
+#Parameters controlling conservative <-> primitive change.
+
+int Spritz_c2p_warnlevel "Warnlevel for Con2Prim warnings" STEERABLE=ALWAYS
+{
+  0:1           :: "Either 0 or 1"
+} 0
+
+int Spritz_c2p_warn_from_reflevel "Start warning on given refinement level and on higher levels" STEERABLE=ALWAYS
+{
+  0:           :: "Greater or equal to 0"
+} 0
+
+real Spritz_mhd_tolf "Accuracy used in Spritz_Con2Prim_MHD.F90 for C2P root-finding"
+{
+  0: :: "Must be positive"
+} 1.e-13
+
+int Spritz_countmax "Maximum number of iterations for Con2Prim solve" STEERABLE=RECOVER
+{
+  1:*		:: "Must be positive"
+} 100
+
+real Spritz_alp_BH "Points with a lapse value below this are set to atmosphere (excision)"
+{
+  : :: "If negative it is not used"
+  } -1.0
+
+###Parameters for compact fluid objects
+
+REAL Spritz_rho_central "Central Density for Star"
+{
+  : :: ""
+} 1.e-5
+
+##Parameters for the atmosphere.
+
+REAL press_atmo "Pressure in the atmosphere"
+{
+ (0.0: :: "Exclude zero"
+} 1.0E-12
+
+REAL rho_abs_min "A minimum rho below which evolution is turned off (atmosphere). If negative, the relative minimum will be used instead."
+{
+  -1.0: :: ""
+} -1.0
+
+REAL rho_abs_eos_min "Minimum rho tabulated in EOS. It is set up by ID_Nrotstar." STEERABLE=ALWAYS
+{
+  (0.0:* :: ""
+} 1.0E-13
+
+REAL rho_rel_min "A minimum relative rho (rhomin = centden * rho_rel_min) below which evolution is turned off (atmosphere). Only used if rho_abs_min < 0.0"
+{
+  0: :: ""
+} 1.e-9
+
+REAL initial_rho_abs_min "An absolute value for rho in the atmosphere. To be used by initial data routines only. Unused if negative."
+{
+  -1.0: :: ""
+} -1.0
+
+REAL initial_rho_rel_min "A relative (to the central density) value for rho in the atmosphere. To be used by initial data routines only. Unused if negative."
+{
+  -1.0: :: ""
+} -1.0
+
+REAL initial_atmosphere_factor "A relative (to the initial atmosphere) value for rho in the atmosphere. To be used by initial data routines only. Unused if negative."
+{
+  -1.0: :: ""
+} -1.0
+
+REAL rho_abs_min_after_recovery "A new absolute value for rho in the atmosphere. To be used after recovering. Unused if negative." STEERABLE=ALWAYS
+{
+  -1.0: :: ""
+} -1.0
+
+REAL Spritz_atmo_tolerance "A point is set to atmosphere in the Con2Prim's if its rho < Spritz_rho_min *(1+Spritz_atmo_tolerance). This avoids occasional spurious oscillations in carpet buffer zones lying in the atmosphere (because prolongation happens on conserved variables)" STEERABLE=ALWAYS
+{
+   0.0: :: "Zero or larger. A useful value could be 0.0001"
+}  0.0
+
+real Con2Prim_perc_ptol "Tolerance for primitive variable solve (percent)" STEERABLE=ALWAYS
+{
+ 0: :: "Do we really want both tolerances?"
+} 1.e-8
+
+REAL Spritz_hot_atmo_temp "Temperature of the hot atmosphere in MeV" STEERABLE=ALWAYS
+{
+ (0.0:*   :: "Larger than 0 MeV"
+} 0.1e0
+
+REAL Spritz_max_temp "maximum temperature we allow" STEERABLE=ALWAYS
+{
+ (0.0:*   :: "Larger than 0 MeV"
+} 90.0e0
+
+REAL Spritz_hot_atmo_Y_e "Y_e of the hot atmosphere" STEERABLE=ALWAYS
+{
+ 0.0:*   :: "Larger than 0"
+} 0.5e0
+
+REAL Spritz_EvolveT_at_time "Set when to evolve T." STEERABLE=RECOVER
+{
+  -2      ::  "Temperature is always constrained."
+  -1      ::  "Not enabled, temperature is always taken from thermo values and never constrained."
+  (0.0:*  ::  "Greater than 0, or not enabled"
+} -1
+
+
+REAL Spritz_Y_e_min "minimum allowed Y_e" STEERABLE=ALWAYS
+{
+ 0.0:*   :: "Larger than or equal to zero"
+} 0.0
+
+REAL Spritz_Y_e_max "maximum allowed Y_e" STEERABLE=ALWAYS
+{
+ 0.0:*   :: "Larger than or equal to zero; 1 is default"
+} 1.0
+
+BOOLEAN Spritz_eos_hot_eps_fix "Activate quasi-failsafe mode for hot EOSs" STEERABLE=ALWAYS
+{
+} "no"
+
+BOOLEAN Spritz_eos_hot_prim2con_warn "Warn about temperature workaround in prim2con" STEERABLE=ALWAYS
+{
+} "yes"
+
+BOOLEAN Spritz_Constrain_Temperature "This is only internally used, don't set this by parfile." STEERABLE=ALWAYS
+{
+} "no"
+
+
+### Root finding precision for EOS_Omni
+CCTK_REAL Eos_rf_prec "Root finding precision"
+{
+    1.0e-10:* :: ""
+} 1.0e-8
+
+#Find maxima
+
+boolean compute_DCandMaxima "Shall we compute the drift correction and the maxima?" STEERABLE=ALWAYS
+{
+} "no"
+
+int DCandMaxima_every "Every so many iterations the maximum is computed"
+{
+  1:* :: "Any positive integer"
+} 1
+
+real rho_max_min "Minimum value that the searched maximum of the density can have to be still used"
+{
+  0:* :: "any positive number"
+} 0
+
+boolean Spritz_useFullGridForMaxima "Shall we use the full grid for finding the maxima (default is x>0)?" STEERABLE=ALWAYS
+{
+} "no"
+
+
+#Finding separations
+
+boolean compute_EqualMassStarSeparation "Shall we compute the separation between the two stars? It only works for the equal-mass case." STEERABLE=ALWAYS
+{
+} "yes"
+
+int separation_npoints "Number of points along the straight line for measuring proper separation"
+{
+  1:* :: "Any positive number"
+} 100
+
+
+#Carpet Prolongation
+
+STRING prolongation_type_MHD "The prolongation operator used by Carpet for the magnetic field variables (Bx, By, Bz, dBx, dBy, dBz)"
+{
+  "ENO"  :: "Third order ENO operators; only third order is implemented"
+  "WENO" :: "Fifth order WENO operators; only fifth order is implemented"
+  ".*"   :: "Anything else"
+} "ENO"
+
+
+boolean Spritz_use_Tmunu "Shall we compute Tmunu?"
+{
+} "yes"
+
+boolean Spritz_Avec_Staggered "Shall we use the staggered vector potential"
+{
+} "no"
+
+boolean Spritz_mhd_fluxCD_Lorenz "Shall we use flux-CD method to evolve the vector potential using the Lorenz gauge?"
+{
+} "no"
+
+STRING Spritz_Extr_OB_Avec_Psi "Shall we use perform a linear extrapolation for Avec and Psi at Outer Boundaries?"
+{
+"yes"  :: "Perform linear extrapolation for Avec and psi_mhd at Outer Boundaries"
+"no"   :: "Simply apply defined conditions at boundaries"
+} "yes"
+
+CCTK_REAL lorenz_damp_fac "Damping factor used in the Lorenz Gauge (see Farris et al 2012)"
+{
+ 0:* :: "should be positive"
+} 0.0
+
+boolean Spritz_use_zrake_macfadyen_amplification "Amplify the vector potential where the fluid is turbulent"
+{
+} "no"
+
+int zrake_stencil "Width of the stencil to be used to compute the average quantities"
+{
+  0:		:: "Must be positive"
+} 1
+
+CCTK_REAL zrake_c1 "Value of C1 coefficient, the one limiting the growth rate"
+{
+  0:		:: "Must be positive"
+} 0.1
+
+CCTK_REAL zrake_c2 "Value of C2 coefficient, the one setting a cap on B^2=(c2*Delta W)"
+{
+  0:		:: "Must be positive"
+} 0.6
+
+boolean not_set_to_atmo_if_c2pIF_fails "If Con2Prim Ideal_Fluid fails then leave the values of the primitives equal to those at the previous timelevel"
+{
+} "no"
+
+boolean Spritz_check_divB "Shall we compute the divergence of the magnetic field?"
+{
+} "no"
+
+boolean Spritz_check_BTor "Shall we compute the toroidal magnetic field strength?"
+{
+} "no"
+
+##The following parameter asks if you want to compute sevaral MHD integral quantities:
+## EM Energy,
+## kinetic energy (Newtonian),
+## Turbulent Energy (if using  Spritz_use_zrake_macfadyen_amplification),
+##  Mean Magnetic Field Value
+boolean compute_EMenergy "Shall we compute the total magnetic energy and other analysis variables?"
+{
+} "no"
+
+
+CCTK_INT Spritz_mhd_coeff "If set to zero the stress-energy tensor is the one of relativistic hydrodynamics"
+{
+  0:1          :: "only 0 or 1, other values have no sense"
+} 1
+
+CCTK_REAL Spritz_mhddet_error_threshold "If the determinant of the quadratic used to compute the eigenvalues is less than -Spritz_mhddet_error_threshold stops the code" STEERABLE=ALWAYS
+{
+  0:* :: "non negative"
+} 1e-12
+
+BOOLEAN zero_slope_fix "Shall we set the slope to zero if in a cell v^2 at the interface is larger than one?" STEERABLE=ALWAYS
+{
+} "yes"
+
+# NaN detection level
+
+INT Spritz_NaN_verbose "The warning level for NaNs occuring within Spritz" STEERABLE=ALWAYS
+{
+  0:* :: "The warning level"
+} 2
+
+#you need to set this to yes if using GRMHD with a hot piecewise polytropic EOS
+BOOLEAN use_PPEOS "Are we using a hot piecewise polytropic EOS?"
+{
+} "no"
+
+### This parameter is important for EOS_HotHybrid.
+CCTK_INT Spritz_Reset_NaNbyAtmo_at_RL "To avoid crash of simulation by NaN on coarse grid, we reset NaN by atmosphere." STEERABLE=ALWAYS
+{
+  -1       :: "We stop the simulation without resetting."
+  0:100000 :: "We reset NaN on the grid with [ refinement level <= Spritz_Reset_NaNbyAtmo_at_RL ]."
+  999999   :: "We do not do anything."
+} 999999
+
+CCTK_INT Spritz_Reset_NaN_verbose "The warning level for Spritz_Reset_NaNbyAtmo_at_RL" STEERABLE=ALWAYS
+{
+    1:* :: "The warning level"
+} 2
+
+### Usually we shouldn't use this mechanism, i.e., don't set "Recompute_Val_for_NegEpsth<=0", except for EOS_HotHybrid.
+CCTK_REAL Recompute_Val_for_NegEpsth "If eps_th/eps_ad<Recompute_Val_for_NegEpsth<0 where eps_th=(eps-eps_ad), then we recompute Con2Prim using polytype subroutine." STEERABLE=ALWAYS
+{
+    *:0  :: "threshold value. e.g. -1.0e-1."
+    (0:* :: "Don't use this mechanism."
+} 1.0e+30

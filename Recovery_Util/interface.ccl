@@ -1,0 +1,9 @@
+# Interface definition for thorn Recovery_Util
+
+implements: Recovery_Util
+
+inherits:
+
+public:
+
+CCTK_INT  Recovery_Flag  type = SCALAR  "If the simulation is recovered from checkpoint files, this flag become 1(i.e., TRUE)."

@@ -1,0 +1,7 @@
+# Module dependencies for thorn Spritz
+
+Spritz_PreLoop.F90.o:			Spritz_Scalars.F90.o
+Spritz_SlopeLimiter.F90.o:		Spritz_Scalars.F90.o
+Spritz_Con2Prim_MHD.F90.o:		nrmodule.F90.o
+zrhqr.F90.o:				nrmodule.F90.o
+nrmodule.F90.o:				nrutil.F90.o

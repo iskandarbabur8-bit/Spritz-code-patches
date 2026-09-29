@@ -1,0 +1,10 @@
+# Configuration definition for thorn Spritz_InitData
+# $Header$
+
+REQUIRES EOS_Omni
+
+OPTIONAL_IFACTIVE Carpet
+{
+}
+
+

@@ -1,0 +1,15 @@
+rho (left state)  = 1.0D0
+rho (right state) = 0.9D0
+pgas (left state) = 5.0D0
+pgas (right state)= 5.3D0
+vx (left state)   = 0.0D0
+vx (right state)  = 0.0D0
+vy (left state)   = 0.3D0
+vy (right state)  = 0.0D0
+vz (left state)   = 0.4D0
+vz (right state)  = 0.0D0
+Bx                = 1.0D0
+By (left state)   = 6.0D0
+By (right state)  = 5.0D0
+Bz (left state)   = 2.0D0
+Bz (right state)  = 2.0D0
