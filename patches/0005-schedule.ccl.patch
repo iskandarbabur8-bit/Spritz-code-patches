@@ -1,0 +1,59 @@
+--- a/schedule.ccl
++++ b/schedule.ccl
+@@ -251,6 +251,19 @@
+ schedule group SpritzRHS IN HydroBase_RHS
+ {
+   STORAGE:Spritz_scalars
+ } "Calculate the update terms"
+
++# HydroBase_RHS runs in MoL_CalcRHS, i.e. once per Runge-Kutta substep, not
++# once per full timestep -- unlike the Con2Prim/Boundaries re-fixes below.
++# Between substeps Carpet refreshes ghostzones (including Avec's, via the
++# same staggering-unaware generic fill), so SourceTerms/FluxTerms below
++# (which read Avec's z-neighbors via curl/InterpEdges2Center, see
++# Spritz_HLLE_MHD.F90) would otherwise use stale/wrong-parity ghostzones on
++# every substep except the first. No SYNC of its own.
++schedule Spritz_set_Avec_gz_symmetries IN SpritzRHS BEFORE SourceTerms
++{
++  LANG: C
++  READS: GRID::coordinates, Avec_x, Avec_y, Avec_z
++  WRITES: Avec_x(boundary), Avec_y(boundary), Avec_z(boundary)
++} "Re-apply staggered equatorial-symmetry ghostzones on Avec before every RHS substep"
++
+ ####################################################################
+ ### Do the source terms first, as this does not require the loop ###
+ ### over the different directions                                ###
+@@ -556,6 +569,16 @@
+       SYNC: tau
+       } "Convert back to primitive variables (general, GRMHD version)"
+ }
+
++# Re-fix Avec_x/Avec_y's staggered equatorial-symmetry ghostzones: the
++# preceding SYNC hands them back to ReflectionSymmetry's generic
++# (staggering-unaware) fill, which is wrong for these z-staggered fields
++# (see Spritz_set_Avec_gz_symmetries.c for why). No SYNC of its own.
++schedule Spritz_set_Avec_gz_symmetries IN HydroBase_Con2Prim AFTER Con2Prim
++{
++  LANG: C
++  READS: GRID::coordinates, Avec_x, Avec_y, Avec_z
++  WRITES: Avec_x(boundary), Avec_y(boundary), Avec_z(boundary)
++} "Re-apply staggered equatorial-symmetry ghostzones on Avec after Con2Prim's SYNC"
++
+ #################################################################
+ ### Having finished all the updates, we apply the boundary    ###
+ ### conditions and synchronize the conservative and primitive ###
+@@ -589,6 +612,14 @@
+   SYNC: psi_mhd
+ } "Select Spritz boundary conditions"
+
++# Re-fix again after this SYNC too, for the same reason as after Con2Prim.
++schedule Spritz_set_Avec_gz_symmetries IN HydroBase_Select_Boundaries AFTER Spritz_Boundaries
++{
++  LANG: C
++  READS: GRID::coordinates, Avec_x, Avec_y, Avec_z
++  WRITES: Avec_x(boundary), Avec_y(boundary), Avec_z(boundary)
++} "Re-apply staggered equatorial-symmetry ghostzones on Avec after Spritz_Boundaries' SYNC"
++
+
+ schedule Spritz_outer_boundaries_on_A_mu IN HydroBase_Boundaries
+ {

@@ -1,0 +1,31 @@
+--- a/src/Spritz_Minima.cc
++++ b/src/Spritz_Minima.cc
+@@ -150,9 +150,13 @@
+   else {
+       EOS_Omni_press(*Spritz_eos_handle,keytemp,Eos_rf_prec,n,xrho,xeps,xtemp,xye,xpress,keyerr,&anyerr);
+       press_atm = xpress[0];
+-      EOS_Omni_EpsFromPress(*Spritz_eos_handle,keytemp,Eos_rf_prec,n,xrho,xeps,xtemp,xye,xpressinit,xeps,keyerr,&anyerr);
++      /* NOTE: EOS_Omni_EpsFromPress used to be called here to set eps_atm,
++       * but with keytemp=1 the EOS_Omni_press call above already writes the
++       * cold-curve eps directly into xeps -- the EpsFromPress call was pure
++       * redundancy (same handle, same keytemp, no new inputs). It also has
++       * no case(5) (cold_tabulated) and hard-aborts the run if this EOS is
++       * in use, so it's dropped entirely; xeps[0] already holds the right
++       * value from the call above. */
+       eps_atm = xeps[0];
+       EOS_Omni_DPressByDEps(*Spritz_eos_handle,keytemp,Eos_rf_prec,n,xrho,xeps,xtemp,xye,xdpdeps,keyerr,&anyerr);
+       dpdeps_atm = xdpdeps[0];
+--- a/src/Spritz_Minima.cc
++++ b/src/Spritz_Minima.cc
+@@ -265,9 +265,10 @@
+   keytemp = 1;
+   EOS_Omni_press(*Spritz_eos_handle,keytemp,Eos_rf_prec,n,xrho,xeps,xtemp,xye,xpress,keyerr,&anyerr);
+   press_atm = xpress[0];
+-  EOS_Omni_EpsFromPress(*Spritz_eos_handle,keytemp,Eos_rf_prec,n,xrho,xeps,xtemp,xye,xpressinit,xeps,keyerr,&anyerr);
++  /* NOTE: see the identical case above -- keytemp=1 already makes the
++   * EOS_Omni_press call write the cold-curve eps into xeps directly, so the
++   * EpsFromPress call that used to sit here was pure redundancy (and has no
++   * case(5)/cold_tabulated support, hard-aborting the run). Dropped. */
+   eps_atm = xeps[0];
+   EOS_Omni_DPressByDEps(*Spritz_eos_handle,keytemp,Eos_rf_prec,n,xrho,xeps,xtemp,xye,xdpdeps,keyerr,&anyerr);
+   dpdeps_atm = xdpdeps[0];

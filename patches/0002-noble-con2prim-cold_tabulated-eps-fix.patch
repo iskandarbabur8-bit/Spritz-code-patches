@@ -1,0 +1,33 @@
+--- a/src/Spritz_Con2PrimM_Noble_pt_EOSOmni.c
++++ b/src/Spritz_Con2PrimM_Noble_pt_EOSOmni.c
+@@ -981,15 +981,23 @@
+         //sprintf(messnr," ### u UNPHYS ==> SETTING TO ATMOSPHERE VALUE IN N-R ");
+         //CCTK_WARN(1,messnr);
+-        // Compute values of epsilon from rho and pressure of atmosphere, using EOS_Omni function
++        // Compute values of epsilon from rho and pressure of atmosphere.
++        //
++        // NOTE: EOS_Omni_EpsFromPress has no case(5) (cold_tabulated), and
++        // hard-aborts the run if this EOS is in use (confirmed against
++        // EOS_Omni_SingleVarCalls.F90's eps_from_press select-case). We
++        // don't actually need it: EOS_Omni_press's own case(5) already
++        // computes both press AND eps for cold_tabulated in one call (any
++        // density, including the below-rhomin extrapolated regime) -- it
++        // only *writes* eps back out when called with keytemp=1 ("don't
++        // evolve temperature, we're setting up atmosphere", the same idiom
++        // used elsewhere in this code, e.g. Spritz_Con2Prim_MHD.F90). Using
++        // a local keytemp_atm here (rather than eosvars->eoskeytemp, which
++        // is 0 at this call site since it comes from the real con2prim
++        // solve) gets us eps_atm directly with no second EOS_Omni call.
+         rho_atm = *Spritzrhomin;
+         xrho[0] = rho_atm;
+-        EOS_Omni_press(eosvars->eoshandle,eosvars->eoskeytemp,eosvars->eosprec,1,xrho,xeps,eosvars->eos_temp,
+-                       eosvars->eos_y_e,xpress,eosvars->eoskeyerr,eosvars->eosanyerr);
++        {
++          CCTK_INT keytemp_atm = 1;
++          EOS_Omni_press(eosvars->eoshandle,keytemp_atm,eosvars->eosprec,1,xrho,xeps,eosvars->eos_temp,
++                         eosvars->eos_y_e,xpress,eosvars->eoskeyerr,eosvars->eosanyerr);
++        }
+         press_atm = xpress[0];
+-        EOS_Omni_EpsFromPress(eosvars->eoshandle,eosvars->eoskeytemp,eosvars->eosprec,1,xrho,xeps,eosvars->eos_temp,
+-                              eosvars->eos_y_e,xpress,xeps,eosvars->eoskeyerr,eosvars->eosanyerr);
+         eps_atm = xeps[0];

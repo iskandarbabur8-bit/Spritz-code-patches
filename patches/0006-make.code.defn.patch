@@ -1,0 +1,10 @@
+--- a/src/make.code.defn
++++ b/src/make.code.defn
+@@ -37,7 +37,8 @@
+   Spritz_InitZeroVar.F90 \
+   Spritz_Avec_outer_boundaries.C \
++	Spritz_set_Avec_gz_symmetries.c \
+ 	Spritz_CheckConstrainT.c
+
+ # Subdirectories containing source files
+ SUBDIRS =

@@ -1,0 +1,24 @@
+--- a/src/Spritz_Prim2Con.F90
++++ b/src/Spritz_Prim2Con.F90
+@@ -925,13 +925,17 @@
+   !dpress = EOS_Pressure(handle, drho, deps)
+   !deps = EOS_SpecificIntEnergy(handle, drho, dpress)
+
+   !!!!!!
++  ! NOTE: this used to also call EOS_Omni_EpsFromPress(handle,...,xpress,xeps,...)
++  ! right after, overwriting deps with the "eps" implied by the press we just
++  ! computed FROM that same deps. For any self-consistent EOS that round trip
++  ! is a no-op: dpress was itself computed as a function of deps in the call
++  ! below, so inverting it must return exactly deps again. EOS_Omni_EpsFromPress
++  ! has no case(5) (cold_tabulated) and hard-aborts the run if this EOS is
++  ! in use, so we drop the redundant inverse call entirely and leave deps as-is --
++  ! mathematically identical result, and it now also works for cold_tabulated.
+   xrho = drho
+   xeps = deps
+   call EOS_Omni_press(handle,keytemp,Eos_rf_prec,n,&
+                       xrho,xeps,xtemp,xye,xpress,keyerr,anyerr)
+   dpress = xpress(1)
+-  call EOS_Omni_EpsFromPress(handle,keytemp,Eos_rf_prec,n,&
+-                             xrho,xeps,xtemp,xye,xpress,xeps,keyerr,anyerr)
+-  deps = xeps(1)
+   !!!!!!
