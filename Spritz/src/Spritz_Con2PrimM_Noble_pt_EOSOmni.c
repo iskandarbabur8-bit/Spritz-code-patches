@@ -94,6 +94,12 @@ struct eosomnivars {
   CCTK_INT eoskeyerr[1],eosanyerr[1];
   CCTK_INT eosrl,eosit,eosi,eosj,eosk;         /*  */
   CCTK_REAL eosx,eosy,eosz;
+  /* Matched-polytrope calibration constants for extrapolating cold_tabulated
+   * EOS below its table rho_min (see Spritz_coldtab_calib in interface.ccl,
+   * computed once by Spritz_Rho_Minima_Setup_Final in Spritz_Minima.cc).
+   * Used by the atmosphere-reset branch below so it never has to call
+   * EOS_Omni during a con2prim failure. */
+  CCTK_REAL coldtab_rhomin,coldtab_press_lo,coldtab_eps_lo,coldtab_gamma_lo;
 } ;
 
 // Declarations:
@@ -157,6 +163,7 @@ void CCTK_FCALL CCTK_FNAME(Spritz_Con2Prim_Noble) (
     CCTK_REAL *det,
     CCTK_INT  *epsnegative,
     CCTK_REAL *Spritz_rho_min,
+    CCTK_REAL *coldtab_rhomin, CCTK_REAL *coldtab_press_lo, CCTK_REAL *coldtab_eps_lo, CCTK_REAL *coldtab_gamma_lo,
     CCTK_REAL *retval);
 
 /**********************************************************************/
@@ -242,6 +249,7 @@ void CCTK_FCALL CCTK_FNAME(Spritz_Con2Prim_Noble)  (
     CCTK_REAL *det,
     CCTK_INT  *epsnegative,
     CCTK_REAL *Spritz_rho_min,
+    CCTK_REAL *coldtab_rhomin, CCTK_REAL *coldtab_press_lo, CCTK_REAL *coldtab_eps_lo, CCTK_REAL *coldtab_gamma_lo,
     CCTK_REAL *retval)
 
 {
@@ -282,6 +290,10 @@ void CCTK_FCALL CCTK_FNAME(Spritz_Con2Prim_Noble)  (
   eosvars.eosx = *x;
   eosvars.eosy = *y;
   eosvars.eosz = *z;
+  eosvars.coldtab_rhomin   = *coldtab_rhomin;
+  eosvars.coldtab_press_lo = *coldtab_press_lo;
+  eosvars.coldtab_eps_lo   = *coldtab_eps_lo;
+  eosvars.coldtab_gamma_lo = *coldtab_gamma_lo;
 
   gammaeos = *gamma_eos;
 
@@ -862,6 +874,7 @@ static CCTK_INT threed_newton_raphson_omni( CCTK_REAL x[], CCTK_REAL *Spritzrhom
                                             CCTK_REAL [][3], CCTK_REAL *,
                                             CCTK_REAL *, struct eosomnivars *, struct LocGlob *) )
 {
+  DECLARE_CCTK_PARAMETERS;
   CCTK_REAL f, df, dx[3], x_old[3];
   CCTK_REAL resid[3], jac[3][3];
   CCTK_REAL errx, x_orig[3], x_entrance[3];
@@ -981,29 +994,43 @@ static CCTK_INT threed_newton_raphson_omni( CCTK_REAL x[], CCTK_REAL *Spritzrhom
 
         //sprintf(messnr," ### u UNPHYS ==> SETTING TO ATMOSPHERE VALUE IN N-R ");
         //CCTK_WARN(1,messnr);
-        // Compute values of epsilon from rho and pressure of atmosphere.
+        // Compute values of epsilon and pressure at atmosphere density.
         //
-        // NOTE: EOS_Omni_EpsFromPress has no case(5) (cold_tabulated), and
-        // hard-aborts the run if this EOS is in use (confirmed against
-        // EOS_Omni_SingleVarCalls.F90's eps_from_press select-case). We
-        // don't actually need it: EOS_Omni_press's own case(5) already
-        // computes both press AND eps for cold_tabulated in one call (any
-        // density, including the below-rhomin extrapolated regime) -- it
-        // only *writes* eps back out when called with keytemp=1 ("don't
-        // evolve temperature, we're setting up atmosphere", the same idiom
-        // used elsewhere in this code, e.g. Spritz_Con2Prim_MHD.F90). Using
-        // a local keytemp_atm here (rather than eosvars->eoskeytemp, which
-        // is 0 at this call site since it comes from the real con2prim
-        // solve) gets us eps_atm directly with no second EOS_Omni call.
+        // For cold_tabulated: use Spritz's own matched-polytrope
+        // extrapolation below the table's rho_min (calibrated once, at
+        // startup, in Spritz_Rho_Minima_Setup_Final / Spritz_Minima.cc, into
+        // eosvars->coldtab_*) -- zero EOS_Omni calls here. This replaces the
+        // EOS_Omni_press(keytemp=1) call that used to sit here: that relied
+        // on EOS_Omni's own extrapolation, which hardcodes Gamma=2
+        // regardless of the table's actual local slope (confirmed against
+        // EOS_Omni_ColdEOSReadTable.F90), unlike IllinoisGRMHD/WhiskyTHC,
+        // which both use the table's real local Gamma. The formula below is
+        // the pure power-law ("multiplicative") form eps=eps_lo*ratio^
+        // (Gamma_lo-1), P=P_lo*ratio^Gamma_lo, matching GRHayL's
+        // NRPyEOS_hybrid_coldtab_compute_P_cold_and_eps_cold.c exactly --
+        // verified numerically that the alternative additive form
+        // (integrating deps=-P d(1/rho) from the matching point) goes
+        // NEGATIVE at Spritz_rho_min for this table, consistent with that
+        // file's own comment explaining why it was rejected there. The
+        // multiplicative form is always positive and exactly continuous in
+        // both P and eps at the matching point (ratio=1) by construction.
+        //
+        // For any other EOS table, fall back to the original EOS_Omni_press
+        // call (only cold_tabulated has this extrapolation-Gamma bug).
         rho_atm = *Spritzrhomin;
-        xrho[0] = rho_atm;
-        {
+        if (CCTK_EQUALS(Spritz_eos_table,"cold_tabulated")) {
+          const CCTK_REAL Gamma_lo = eosvars->coldtab_gamma_lo;
+          const CCTK_REAL ratio = rho_atm / eosvars->coldtab_rhomin;
+          press_atm = eosvars->coldtab_press_lo * pow(ratio, Gamma_lo);
+          eps_atm   = eosvars->coldtab_eps_lo * pow(ratio, Gamma_lo - 1.0);
+        } else {
+          xrho[0] = rho_atm;
           CCTK_INT keytemp_atm = 1;
           EOS_Omni_press(eosvars->eoshandle,keytemp_atm,eosvars->eosprec,1,xrho,xeps,eosvars->eos_temp,
                          eosvars->eos_y_e,xpress,eosvars->eoskeyerr,eosvars->eosanyerr);
+          press_atm = xpress[0];
+          eps_atm = xeps[0];
         }
-        press_atm = xpress[0];
-        eps_atm = xeps[0];
 
         x[2] = eps_atm * rho_atm;
         keep_iterating = 1;

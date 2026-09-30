@@ -51,6 +51,15 @@ EXTENDS KEYWORD temperature_evolution_method ""
 
 
 
+#########################################
+###  PARAMETRES SHARED FROM EOS_Omni  ###
+#########################################
+
+shares: EOS_Omni
+
+USES STRING coldeos_table_name
+
+
 
 #########################################
 ###  PARAMETRES SHARED FROM MoL       ###

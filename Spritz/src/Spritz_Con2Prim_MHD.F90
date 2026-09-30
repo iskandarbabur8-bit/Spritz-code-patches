@@ -409,7 +409,9 @@ subroutine Conservative2Primitive_mhd(CCTK_ARGUMENTS)
                    Bx(i,j,k), By(i,j,k), Bz(i,j,k), b2small_loc, w_lorentz(i,j,k),&
                    gxx(i,j,k),gxy(i,j,k),gxz(i,j,k),gyy(i,j,k),gyz(i,j,k),gzz(i,j,k), &
                    uxx,uxy,uxz,uyy,uyz,uzz,det, &
-                   epsnegative,Spritz_rho_min,Retval)
+                   epsnegative,Spritz_rho_min, &
+                   Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo, &
+                   Retval)
                    mhd_c2p_mask(i,j,k) = Retval
               if(abs(mhd_c2p_mask(i,j,k)) .gt. 1.0d-8) then
                                c2perror=.true. !mhd_c2p_mask(i,j,k)
@@ -2654,7 +2656,9 @@ subroutine Con2PrimPolytype_mhd(CCTK_ARGUMENTS)
                    Bx(i,j,k), By(i,j,k), Bz(i,j,k), b2small_loc, w_lorentz(i,j,k),&
                    gxx(i,j,k),gxy(i,j,k),gxz(i,j,k),gyy(i,j,k),gyz(i,j,k),gzz(i,j,k), &
                    uxx,uxy,uxz,uyy,uyz,uzz,det, &
-                   epsnegative,Spritz_rho_min,retvalcheck)        !mhd_c2p_mask(i,j,k)
+                   epsnegative,Spritz_rho_min, &
+                   Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo, &
+                   retvalcheck)        !mhd_c2p_mask(i,j,k)
               if(abs(retvalcheck) .gt. 1.0d-8 ) then
                                !$OMP CRITICAL
                                write(warnline,'(a80,g20.7)') 'ATTENTION: Problems in C2P_Nobel, polytropic case - returned Retval = ',retvalcheck

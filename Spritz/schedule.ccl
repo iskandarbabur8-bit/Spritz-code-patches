@@ -58,6 +58,7 @@ STORAGE:taurhs
 STORAGE:srhs
 STORAGE:Spritz_eos_scalars
 STORAGE:Spritz_minima
+STORAGE:Spritz_coldtab_calib
 STORAGE:Spritz_scalars
 
 #need to always store Y_e, temperature and Y_e_con, due to Prim2ConInitial
