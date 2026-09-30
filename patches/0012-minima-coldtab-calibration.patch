@@ -1,0 +1,139 @@
+diff --git a/src/Spritz_Minima.cc b/src/Spritz_Minima.cc
+index 02fabec..efdfa1a 100644
+--- a/src/Spritz_Minima.cc
++++ b/src/Spritz_Minima.cc
+@@ -11,6 +11,9 @@
+ #include "cctk_Parameters.h"
+ #include "cctk_Arguments.h"
+ 
++#include <cstdio>
++#include <cmath>
++
+ //#include "Carpet/Carpet/src/carpet.hh"
+ #include "carpet.hh"
+ 
+@@ -33,6 +36,32 @@ using namespace Carpet;
+   } /* extern "C" */
+ #endif
+ 
++/* Parse "RhoMin = <val>" from the header of an EOS_Omni cold_tabulated ASCII
++ * table file. Used to calibrate Spritz's own matched-polytrope extrapolation
++ * below the table's rho_min (see Spritz_coldtab_calib in interface.ccl),
++ * without re-implementing EOS_Omni's table reader and without depending on
++ * EOS_Omni_Module's internal (non-public-API) coldeos_rhomin. */
++static int Spritz_ReadColdTabRhoMin(const char *table_name, CCTK_REAL *rho_min_out)
++{
++  FILE *fp = fopen(table_name, "r");
++  if (!fp) return 0;
++
++  char line[512];
++  double rmin = 0.0, rmax = 0.0;
++  int found = 0;
++  while (fgets(line, sizeof(line), fp)) {
++    if (sscanf(line, "RhoMin = %lf RhoMax = %lf", &rmin, &rmax) == 2) {
++      found = 1;
++      break;
++    }
++  }
++  fclose(fp);
++
++  if (!found || !(rmin > 0.0)) return 0;
++  *rho_min_out = rmin;
++  return 1;
++}
++
+  /*@@
+    @routine    Spritz_Rho_Minima_Setup_Final
+    @date       Tue Aug 29 18:54:05 2006
+@@ -99,6 +128,58 @@ void Spritz_Rho_Minima_Setup_Final(CCTK_ARGUMENTS)
+ 	  } END_GLOBAL_MODE;
+ 
+ 	}
++
++      // Calibrate Spritz's own matched-polytrope extrapolation below the
++      // cold_tabulated EOS table's own rho_min. EOS_Omni's built-in
++      // extrapolation for this table (EOS_Omni_ColdEOSReadTable.F90)
++      // hardcodes Gamma=2 regardless of the table's actual local slope;
++      // doing our own calibration here lets the con2prim-failure
++      // atmosphere-reset path (Spritz_Con2PrimM_Noble_pt_EOSOmni.c) use the
++      // table's real behavior instead, and to do so without calling into
++      // EOS_Omni at all during that failure path -- this one-time
++      // calibration (run here, at startup, not on failure) is the only
++      // place that still calls EOS_Omni_press for this purpose.
++      if (CCTK_EQUALS(Spritz_eos_table,"cold_tabulated"))
++	{
++	  CCTK_REAL rho_table_min;
++	  if (!Spritz_ReadColdTabRhoMin(coldeos_table_name, &rho_table_min))
++	    {
++	      CCTK_WARN(CCTK_WARN_ABORT, "Spritz: could not read RhoMin from EOS_Omni::coldeos_table_name for the coldtab matched-polytrope calibration.");
++	    }
++
++	  const CCTK_INT n_calib = 1;
++	  CCTK_INT calib_keytemp = 1, calib_keyerr[1], calib_anyerr;
++	  CCTK_REAL cxrho[1], cxeps[1], cxpress[1], cxtemp[1], cxye[1];
++	  cxtemp[0] = Spritz_hot_atmo_temp;
++	  cxye[0]   = Spritz_Y_e_max;
++
++	  // First point: the table's own rho_min (gives P_lo, eps_lo).
++	  cxrho[0] = rho_table_min;
++	  EOS_Omni_press(*Spritz_eos_handle,calib_keytemp,Eos_rf_prec,n_calib,cxrho,cxeps,cxtemp,cxye,cxpress,calib_keyerr,&calib_anyerr);
++	  const CCTK_REAL P_lo   = cxpress[0];
++	  const CCTK_REAL eps_lo = cxeps[0];
++
++	  // Second, nearby point (WhiskyTHC-style two-point secant, see
++	  // thcextra/EOS_Barotropic/src/eos_tabulated.cpp) to recover the
++	  // table's actual local Gamma there, via the public EOS_Omni_press
++	  // API only (EOS_Omni does not expose the per-row Gamma it
++	  // interpolates internally).
++	  cxrho[0] = 1.1 * rho_table_min;
++	  EOS_Omni_press(*Spritz_eos_handle,calib_keytemp,Eos_rf_prec,n_calib,cxrho,cxeps,cxtemp,cxye,cxpress,calib_keyerr,&calib_anyerr);
++	  const CCTK_REAL P2 = cxpress[0];
++
++	  const CCTK_REAL Gamma_lo = log(P2/P_lo) / log(1.1);
++
++	  *Spritz_coldtab_rhomin   = rho_table_min;
++	  *Spritz_coldtab_press_lo = P_lo;
++	  *Spritz_coldtab_eps_lo   = eps_lo;
++	  *Spritz_coldtab_gamma_lo = Gamma_lo;
++
++	  CCTK_VInfo(CCTK_THORNSTRING,
++	    "coldtab matched-polytrope calibration: rho_min=%.6e P_lo=%.6e eps_lo=%.6e Gamma_lo=%.6f",
++	    (double)rho_table_min, (double)P_lo, (double)eps_lo, (double)Gamma_lo);
++	}
++
+       // After this has run once, set the flag so that this does not run again
+       flag = false;
+     } // end if (flag)
+@@ -148,6 +229,32 @@ void Spritz_Rho_Minima_Setup_Final(CCTK_ARGUMENTS)
+       EOS_Omni_cs2(*Spritz_eos_handle,keytemp,Eos_rf_prec,n,xrho,xeps,xtemp,xye,xcs2,keyerr,&anyerr);
+       *Spritz_Cs2_min = xcs2[0];
+   }
++  else if (CCTK_EQUALS(Spritz_eos_table,"cold_tabulated")) {
++      /* Matched-polytrope extrapolation below the table's own rho_min,
++       * calibrated once above into Spritz_coldtab_calib -- zero EOS_Omni
++       * calls here. Uses the pure power-law ("multiplicative") form
++       * eps=eps_lo*ratio^(Gamma_lo-1), P=P_lo*ratio^Gamma_lo, matching
++       * GRHayL's NRPyEOS_hybrid_coldtab_compute_P_cold_and_eps_cold.c
++       * exactly -- verified numerically that the alternative additive form
++       * (integrating deps=-P d(1/rho) from the matching point) goes
++       * NEGATIVE at Spritz_rho_min for this table (rho_min/Spritz_rho_min
++       * ~200), consistent with that file's own comment explaining why it
++       * was rejected there. The multiplicative form is a pure power law
++       * (always positive) and is exactly continuous in both P and eps at
++       * the matching point (ratio=1) by construction. dpdeps_atm=0 below
++       * rho_min matches EOS_Omni's own EOS_Omni_EOS_DPressByDEps case(5)
++       * (P=P(rho) only in this regime, confirmed against source);
++       * dpdrho_atm is the analytic derivative of the same power law used
++       * for press_atm. */
++      const CCTK_REAL Gamma_lo = *Spritz_coldtab_gamma_lo;
++      const CCTK_REAL ratio = rho_atm / (*Spritz_coldtab_rhomin);
++      press_atm  = (*Spritz_coldtab_press_lo) * pow(ratio, Gamma_lo);
++      eps_atm    = (*Spritz_coldtab_eps_lo) * pow(ratio, Gamma_lo - 1.0);
++      dpdeps_atm = 0.0;
++      dpdrho_atm = Gamma_lo * press_atm / rho_atm;
++      *Spritz_Cs2_min = ( dpdrho_atm + press_atm * dpdeps_atm / ( rho_atm*rho_atm ) )
++        / ( 1.0 + eps_atm + press_atm / rho_atm );
++  }
+   else {
+       EOS_Omni_press(*Spritz_eos_handle,keytemp,Eos_rf_prec,n,xrho,xeps,xtemp,xye,xpress,keyerr,&anyerr);
+       press_atm = xpress[0];

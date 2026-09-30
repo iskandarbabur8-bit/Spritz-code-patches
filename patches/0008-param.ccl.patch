@@ -1,0 +1,20 @@
+diff --git a/param.ccl b/param.ccl
+index 03a269e..78a49b3 100644
+--- a/param.ccl
++++ b/param.ccl
+@@ -51,6 +51,15 @@ EXTENDS KEYWORD temperature_evolution_method ""
+ 
+ 
+ 
++#########################################
++###  PARAMETRES SHARED FROM EOS_Omni  ###
++#########################################
++
++shares: EOS_Omni
++
++USES STRING coldeos_table_name
++
++
+ 
+ #########################################
+ ###  PARAMETRES SHARED FROM MoL       ###

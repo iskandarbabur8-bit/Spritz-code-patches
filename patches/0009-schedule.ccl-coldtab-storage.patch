@@ -1,0 +1,12 @@
+diff --git a/schedule.ccl b/schedule.ccl
+index dad45fb..1a5bb8b 100644
+--- a/schedule.ccl
++++ b/schedule.ccl
+@@ -58,6 +58,7 @@ STORAGE:taurhs
+ STORAGE:srhs
+ STORAGE:Spritz_eos_scalars
+ STORAGE:Spritz_minima
++STORAGE:Spritz_coldtab_calib
+ STORAGE:Spritz_scalars
+ 
+ #need to always store Y_e, temperature and Y_e_con, due to Prim2ConInitial

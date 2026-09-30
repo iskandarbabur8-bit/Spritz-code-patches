@@ -1,0 +1,19 @@
+diff --git a/interface.ccl b/interface.ccl
+index c14bd59..b34b118 100644
+--- a/interface.ccl
++++ b/interface.ccl
+@@ -265,6 +265,14 @@ real Spritz_minima type = SCALAR
+   Spritz_Cs2_min
+ } "Atmosphere values"
+ 
++real Spritz_coldtab_calib type = SCALAR
++{
++  Spritz_coldtab_rhomin
++  Spritz_coldtab_press_lo
++  Spritz_coldtab_eps_lo
++  Spritz_coldtab_gamma_lo
++} "Matched-polytrope calibration constants for extrapolating cold_tabulated EOS below its table rho_min, avoiding EOS_Omni calls during con2prim-failure atmosphere resets"
++
+ 
+ real dens type = GF Timelevels = 3 tags='ProlongationParameter="HydroBase::prolongation_type" tensortypealias="Scalar" tensorweight=+1.0 interpolator="matter"' "generalized particle number"
+ 
