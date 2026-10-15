@@ -19,11 +19,13 @@ patch -p1 < patches/0009-schedule.ccl-coldtab-storage.patch
 patch -p1 < patches/0010-noble-con2prim-matched-polytrope.patch
 patch -p1 < patches/0011-con2prim-mhd-noble-call-sites.patch
 patch -p1 < patches/0012-minima-coldtab-calibration.patch
+patch -p1 < patches/0013-avec-gz-symmetries-guard.patch
 ```
 
 Patches 0007-0012 apply on top of 0002-0006 (sequential, not independent -- in
 particular 0010 modifies the same function 0002 already patched, and 0012
-modifies the same routine 0004 already patched).
+modifies the same routine 0004 already patched). 0013 applies on top of the
+`0001` file copy, not the 0002-0012 sequence.
 
 ## What's here
 
@@ -117,6 +119,25 @@ modifies the same routine 0004 already patched).
     `rho_min`, confirmed against `EOS_Omni_EOS_DPressByDEps`'s own
     `case(5)`; `dP/drho` is the power law's analytic derivative).
 
+11. **`0013-avec-gz-symmetries-guard.patch`** -- `0001`
+    (`Spritz_set_Avec_gz_symmetries`) had no guard at all: it ran
+    unconditionally on every call (every RK substep, per 0005's
+    scheduling), regardless of whether `ReflectionSymmetry` was even
+    active. In a full-domain (`Symmetry="none"`-style) run this would
+    still mirror `Avec_x`/`Avec_y` across `z=0` every substep, corrupting
+    real (non-symmetry-plane) physics there via
+    `Bx = dAz/dy - dAy/dz` / `By = dAx/dz - dAz/dx`. Adds a
+    `Spritz_avec_gz_symmetries_is_active()` check (cached after first
+    call, since this runs every substep) that reads
+    `ReflectionSymmetry::reflection_z` via `CCTK_ParameterValString` --
+    that parameter is `PRIVATE` to `ReflectionSymmetry` (no
+    `RESTRICTED:`/`GLOBAL:` header in its `param.ccl`), so it can't be
+    pulled in with `shares:` and has to be read via this cross-thorn
+    introspection call instead, the same technique
+    `IllinoisGRMHD_symmetry_gzs_is_vertex_centered()` uses for the
+    analogous check. Returns immediately (no mirroring at all) if
+    `ReflectionSymmetry` isn't active or `reflection_z="no"`.
+
 ## Verification
 
 - z-reflection symmetry: validated against a non-symmetric reference run
@@ -136,3 +157,11 @@ modifies the same routine 0004 already patched).
   (differently-generated) copy of the same QHC21A table. A full smoke
   test ran cleanly through 26 atmosphere resets with zero crashes and
   zero `Cs2_min is negative` aborts.
+- `reflection_z` guard (patch 13): parameter name, type (`BOOLEAN`), and
+  `PRIVATE` visibility confirmed directly against
+  `CactusNumerical/ReflectionSymmetry/param.ccl`; `CCTK_ParameterValString`/
+  `CCTK_IsThornActive` signatures confirmed against the flesh headers
+  (`cctk_Parameter.h`, `cctk_ActiveThorns.h`). Not yet exercised with an
+  actual `Symmetry="none"` run -- the equatorial-symmetry runs used for the
+  z-reflection verification above would not have caught this gap, since
+  `reflection_z="yes"` in all of them.
