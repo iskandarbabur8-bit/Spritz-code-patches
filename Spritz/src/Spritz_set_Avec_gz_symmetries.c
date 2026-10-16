@@ -1,6 +1,30 @@
 #include "cctk.h"
 #include "cctk_Arguments.h"
 #include "cctk_Parameters.h"
+#include <stdlib.h>
+#include <string.h>
+
+// Is z-reflection symmetry actually active? Cached once per run: this
+// function is called every substep (see schedule.ccl), so it must not
+// re-query/re-parse a parameter on every call. ReflectionSymmetry::reflection_z
+// is private to that thorn (no visibility keyword in its param.ccl), so it
+// can't be imported via "shares:" -- read it via CCTK_ParameterValString
+// instead, the same cross-thorn-read technique used for
+// IllinoisGRMHD_symmetry_gzs_is_vertex_centered() in
+// GRHayLET/IllinoisGRMHD/src/symmetry_gzs_staggered.c.
+static int Spritz_avec_gz_symmetries_is_active(void) {
+  static int cached = -1; // -1 == not yet queried
+  if (cached < 0) {
+    if (CCTK_IsThornActive("ReflectionSymmetry")) {
+      char *reflection_z = CCTK_ParameterValString("reflection_z", "ReflectionSymmetry");
+      cached = (reflection_z != NULL) && (strcmp(reflection_z, "yes") == 0);
+      free(reflection_z);
+    } else {
+      cached = 0; // no symmetry thorn active -> nothing to mirror
+    }
+  }
+  return cached;
+}
 
 /*
  * Direct port of IllinoisGRMHD_set_symmetry_gzs_staggered
@@ -63,6 +87,15 @@ static void Spritz_mirror_gz_staggered_z(
  */
 void Spritz_set_Avec_gz_symmetries(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
+
+  // Nothing to mirror if z-reflection symmetry isn't actually turned on --
+  // this was previously missing, so this function ran unconditionally on
+  // every substep even in full-domain, Symmetry="none"-style runs, where it
+  // could silently corrupt Avec_x/Avec_y near z=0 (or abort outright, if some
+  // component's whole local extent happened to look "below" the nonexistent
+  // plane). Mirrors IllinoisGRMHD_set_symmetry_gzs_staggered's own
+  // `if(CCTK_EQUALS(Symmetry, "none")) return;` guard.
+  if (!Spritz_avec_gz_symmetries_is_active()) return;
 
   Spritz_mirror_gz_staggered_z(cctkGH, z, Avec_x, +1.0, 1);
   Spritz_mirror_gz_staggered_z(cctkGH, z, Avec_y, +1.0, 1);
