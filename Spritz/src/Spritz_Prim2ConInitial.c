@@ -272,6 +272,40 @@ void _M_Prim2ConInitial(
 								&_M_temp[ijk], _M_Y_e[ijk]);
 					}
 					else {
+						/* Initial data is cold by construction (no real thermal
+						 * content anywhere in a Meudon_Bin_NS BNS solution), but
+						 * for rho below the cold_tabulated table's rho_min,
+						 * Meudon_Bin_NS sets eps via EOS_Omni's own native,
+						 * hardcoded-Gamma=2 extrapolation -- not our real local
+						 * Gamma_lo. Confirmed numerically: EOS_Omni's own Gamma=2
+						 * formula (press=low_kappa*rho^2, eps=press/rho) reproduces
+						 * the actual initial eps at affected grid points to float
+						 * precision. Left alone, Spritz_coldtab_press (keytemp=0,
+						 * called inside Prim2ConGen_MHD below) would misread the
+						 * gap between that Gamma=2 curve and our Gamma_lo curve as
+						 * genuine thermal energy and add spurious thermal pressure
+						 * -- confirmed this is exactly what produced 4 outlier
+						 * points with an apparent ~46% eps mismatch. Reset eps to
+						 * the Gamma_lo cold curve first (the same keytemp=1 call
+						 * the atmosphere branch above already uses) so eps is
+						 * self-consistent with the EOS this code actually uses,
+						 * before computing press from it. */
+						if (*Spritz_coldtab_rhomin > 0.0 && _M_rho[ijk] < *Spritz_coldtab_rhomin) {
+							CCTK_INT cc_keytemp = 1;
+							CCTK_REAL cc_rho[1]   = {_M_rho[ijk]};
+							CCTK_REAL cc_eps[1]   = {_M_eps[ijk]};
+							CCTK_REAL cc_temp[1]  = {_M_temp[ijk]};
+							CCTK_REAL cc_ye[1]    = {_M_Y_e[ijk]};
+							CCTK_REAL cc_press[1] = {0.0};
+							CCTK_INT  cc_keyerr[1] = {0};
+							CCTK_INT  cc_anyerr = 0;
+							Spritz_coldtab_press(*Spritz_eos_handle,cc_keytemp,Eos_rf_prec,1,
+								cc_rho,cc_eps,cc_temp,cc_ye,cc_press,cc_keyerr,&cc_anyerr,
+								*Spritz_coldtab_rhomin,*Spritz_coldtab_press_lo,
+								*Spritz_coldtab_eps_lo,*Spritz_coldtab_gamma_lo,
+								*Spritz_coldtab_gammath,*Spritz_coldtab_thfac);
+							_M_eps[ijk] = cc_eps[0];
+						}
 					  Prim2ConGen_MHD(*Spritz_eos_handle, _M_gxx[ijk], _M_gxy[ijk],
 							  _M_gxz[ijk], _M_gyy[ijk], _M_gyz[ijk], _M_gzz[ijk],
 							  det,&_M_dens[ijk],&_M_sx[ijk],&_M_sy[ijk],&_M_sz[ijk],
