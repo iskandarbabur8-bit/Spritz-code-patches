@@ -341,18 +341,36 @@ subroutine Spritz_HLLE_MHD(CCTK_ARGUMENTS)
                cs2plus = xcs2(1)
                ptotplus = presstmp + Spritz_mhd_coeff*0.5d0*bs2plus
              else !non-nuclear EoS
+               ! Routed through Spritz_coldtab_press/dpdrho/dpdeps
+               ! (Spritz_coldtab_eos.c) instead of EOS_Omni_press/
+               ! DPressByDRho/DPressByDEps directly: this is the
+               ! reconstructed left/right-state press/derivatives feeding
+               ! the HLLE wave-speed estimate and flux, every cell face,
+               ! every timestep. Below the cold_tabulated table's rho_min,
+               ! uses the table's real local Gamma instead of EOS_Omni's
+               ! own hardcoded Gamma=2; otherwise falls through to the
+               ! unchanged real EOS_Omni_* calls.
                xrho = rhominus(i+xoffset,j+yoffset,k+zoffset)
                xeps = epsminus(i+xoffset,j+yoffset,k+zoffset)
 
                keytemp = 0
-               call EOS_Omni_press(Spritz_eos_handle,keytemp,Eos_rf_prec,n,&
-                     xrho,xeps,xtemp,xye,xpress,keyerr,anyerr)
+               call Spritz_coldtab_press(Spritz_eos_handle,keytemp,Eos_rf_prec,n,&
+                     xrho,xeps,xtemp,xye,xpress,keyerr,anyerr,&
+                     Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,&
+                     Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo,&
+                     Spritz_coldtab_gammath,Spritz_coldtab_thfac)
                presstmp = xpress(1)
-               call EOS_Omni_DPressByDRho(Spritz_eos_handle,keytemp,Eos_rf_prec,n,&
-                  xrho,xeps,xtemp,xye,xdpdrho,keyerr,anyerr)
+               call Spritz_coldtab_dpdrho(Spritz_eos_handle,keytemp,Eos_rf_prec,n,&
+                  xrho,xeps,xtemp,xye,xdpdrho,keyerr,anyerr,&
+                  Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,&
+                  Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo,&
+                  Spritz_coldtab_gammath,Spritz_coldtab_thfac)
                dpdrho = xdpdrho(1)
-               call EOS_Omni_DPressByDEps(Spritz_eos_handle,keytemp,Eos_rf_prec,n,&
-                  xrho,xeps,xtemp,xye,xdpdeps,keyerr,anyerr)
+               call Spritz_coldtab_dpdeps(Spritz_eos_handle,keytemp,Eos_rf_prec,n,&
+                  xrho,xeps,xtemp,xye,xdpdeps,keyerr,anyerr,&
+                  Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,&
+                  Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo,&
+                  Spritz_coldtab_gammath,Spritz_coldtab_thfac)
                dpdeps = xdpdeps(1)
                !!!!!!
                hminus = 1.0d0 + epsminus(i+xoffset,j+yoffset,k+zoffset) + presstmp/rhominus(i+xoffset,j+yoffset,k+zoffset)
@@ -363,14 +381,23 @@ subroutine Spritz_HLLE_MHD(CCTK_ARGUMENTS)
                xeps = epsplus(i,j,k)
 
                keytemp = 0
-               call EOS_Omni_press(Spritz_eos_handle,keytemp,Eos_rf_prec,n,&
-                     xrho,xeps,xtemp,xye,xpress,keyerr,anyerr)
+               call Spritz_coldtab_press(Spritz_eos_handle,keytemp,Eos_rf_prec,n,&
+                     xrho,xeps,xtemp,xye,xpress,keyerr,anyerr,&
+                     Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,&
+                     Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo,&
+                     Spritz_coldtab_gammath,Spritz_coldtab_thfac)
                presstmp = xpress(1)
-               call EOS_Omni_DPressByDRho(Spritz_eos_handle,keytemp,Eos_rf_prec,n,&
-                  xrho,xeps,xtemp,xye,xdpdrho,keyerr,anyerr)
+               call Spritz_coldtab_dpdrho(Spritz_eos_handle,keytemp,Eos_rf_prec,n,&
+                  xrho,xeps,xtemp,xye,xdpdrho,keyerr,anyerr,&
+                  Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,&
+                  Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo,&
+                  Spritz_coldtab_gammath,Spritz_coldtab_thfac)
                dpdrho = xdpdrho(1)
-               call EOS_Omni_DPressByDEps(Spritz_eos_handle,keytemp,Eos_rf_prec,n,&
-                  xrho,xeps,xtemp,xye,xdpdeps,keyerr,anyerr)
+               call Spritz_coldtab_dpdeps(Spritz_eos_handle,keytemp,Eos_rf_prec,n,&
+                  xrho,xeps,xtemp,xye,xdpdeps,keyerr,anyerr,&
+                  Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,&
+                  Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo,&
+                  Spritz_coldtab_gammath,Spritz_coldtab_thfac)
                dpdeps = xdpdeps(1)
                keytemp = 0
                !!!!!!

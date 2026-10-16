@@ -216,7 +216,10 @@ subroutine primitive2conservative(CCTK_ARGUMENTS)
                epsminus(i,j,k),pressminus(i,j,k),w_lorentzminus(i, j, k), &
                Bxminus(i,j,k),Byminus(i,j,k),Bzminus(i,j,k),&
                dBxminus(i,j,k),dByminus(i,j,k),dBzminus(i,j,k),&
-               alpl,betaxl,betayl,betazl)
+               alpl,betaxl,betayl,betazl,&
+               Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,&
+               Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo,&
+               Spritz_coldtab_gammath,Spritz_coldtab_thfac)
           call prim2con_mhd(Spritz_eos_handle, gxxr,gxyr,gxzr,gyyr,gyzr,gzzr, &
                avg_detr, densplus(i,j,k),sxplus(i,j,k),&
                syplus(i,j,k),szplus(i,j ,k),tauplus(i,j,k),&
@@ -224,7 +227,10 @@ subroutine primitive2conservative(CCTK_ARGUMENTS)
                velzplus(i,j,k),epsplus(i,j,k),pressplus(i,j,k),&
                w_lorentzplus(i,j,k),Bxplus(i,j,k),Byplus(i,j,k),&
                Bzplus(i,j,k),dBxplus(i,j,k),dByplus(i,j,k),&
-               dBzplus(i,j,k),alpr,betaxr,betayr,betazr)
+               dBzplus(i,j,k),alpr,betaxr,betayr,betazr,&
+               Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,&
+               Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo,&
+               Spritz_coldtab_gammath,Spritz_coldtab_thfac)
         else !if using hot eos
           xtemp(1) = 0.5d0*(temperature(i,j,k) + &
                      temperature(i-xoffset,j-yoffset,k-zoffset))
@@ -284,7 +290,9 @@ end subroutine primitive2conservative
 
 subroutine prim2con_mhd(handle, gxx, gxy, gxz, gyy, gyz, gzz, det, ddens, &
      dsx, dsy, dsz, dtau , drho, dvelx, dvely, dvelz, deps, dpress, w, &
-     Bx, By, Bz, dBx, dBy, dBz, alp, betax, betay, betaz)
+     Bx, By, Bz, dBx, dBy, dBz, alp, betax, betay, betaz, &
+     coldtab_rhomin, coldtab_press_lo, coldtab_eps_lo, coldtab_gamma_lo, &
+     coldtab_gammath, coldtab_thfac)
 
   implicit none
 
@@ -298,6 +306,8 @@ subroutine prim2con_mhd(handle, gxx, gxy, gxz, gyy, gyz, gzz, det, ddens, &
        Blowx, Blowy, Blowz, bst, bslowx, bslowy, bslowz, bs2, &
        Bx, By, Bz, alp, betax, betay, betaz, betaxlow, betaylow, betazlow, &
        bsx, bsy, bsz
+  CCTK_REAL :: coldtab_rhomin, coldtab_press_lo, coldtab_eps_lo, coldtab_gamma_lo
+  CCTK_REAL :: coldtab_gammath, coldtab_thfac
   CCTK_INT :: handle, ierr
 
 !#ifdef _EOS_BASE_INC_
@@ -323,10 +333,19 @@ subroutine prim2con_mhd(handle, gxx, gxy, gxz, gyy, gyz, gzz, det, ddens, &
   !dpress = EOS_Pressure(handle, drho, deps)
 
   !!!!!!
+  ! Routed through Spritz_coldtab_press (Spritz_coldtab_eos.c) instead of
+  ! EOS_Omni_press directly: this is the hot interface-pressure calculation
+  ! for every reconstructed cell face, every timestep. Below the
+  ! cold_tabulated table's rho_min, uses the table's real local Gamma
+  ! instead of EOS_Omni's own hardcoded Gamma=2; otherwise falls through to
+  ! the unchanged real EOS_Omni_press call.
   xrho = drho
   xeps = deps
-  call EOS_Omni_press(handle,keytemp,Eos_rf_prec,n,&
-                      xrho,xeps,xtemp,xye,xpress,keyerr,anyerr)
+  call Spritz_coldtab_press(handle,keytemp,Eos_rf_prec,n,&
+                      xrho,xeps,xtemp,xye,xpress,keyerr,anyerr,&
+                      coldtab_rhomin,coldtab_press_lo,&
+                      coldtab_eps_lo,coldtab_gamma_lo,&
+                      coldtab_gammath,coldtab_thfac)
   dpress = xpress(1)
   !!!!!!
 
@@ -636,7 +655,10 @@ subroutine Primitive2ConservativeCells(CCTK_ARGUMENTS)
              eps(i,j,k),press(i,j,k),w_lorentz(i,j,k),&
              Bx(i,j,k),By(i,j,k),Bz(i,j,k),&
              dBx(i,j,k),dBy(i,j,k),dBz(i,j,k),&
-             alp(i,j,k),betax(i,j,k),betay(i,j,k),betaz(i,j,k))
+             alp(i,j,k),betax(i,j,k),betay(i,j,k),betaz(i,j,k),&
+             Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,&
+             Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo,&
+             Spritz_coldtab_gammath,Spritz_coldtab_thfac)
 
       end do
     end do

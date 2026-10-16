@@ -138,6 +138,12 @@ schedule Spritz_TemperatureCheck AT CCTK_INITIAL AFTER HydroBase_Initial BEFORE 
   LANG: Fortran
 } "Make sure the temperature is uniform if constraining it."
 
+schedule Spritz_ColdTabCalibration AT CCTK_INITIAL AFTER HydroBase_Initial BEFORE HydroBase_Prim2ConInitial
+{
+  LANG: C
+  OPTIONS: GLOBAL
+} "Calibrate the matched-polytrope constants for cold_tabulated EOS below its table rho_min, before any atmosphere point (initial data or con2prim failure) needs them"
+
 ######################################
 ### Standard symmetry registration ###
 ######################################

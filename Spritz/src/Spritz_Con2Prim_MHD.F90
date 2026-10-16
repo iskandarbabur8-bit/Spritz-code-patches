@@ -356,11 +356,24 @@ subroutine Conservative2Primitive_mhd(CCTK_ARGUMENTS)
                     keyerr,anyerr) !this just changes press, eps and entropy
                 keytemp = 0
               else
+                ! Routed through Spritz_coldtab_press (Spritz_coldtab_eos.c),
+                ! the same centralized matched-polytrope wrapper used by
+                ! con2prim/prim2con/reconstruction/initial data: below the
+                ! cold_tabulated table's rho_min it uses the table's real
+                ! local Gamma instead of a generic K=100/Gamma=2 polytrope
+                ! (EOS_Omni::poly_k/poly_gamma defaults) that the previous
+                ! Spritz_polytrope_handle-based code used UNCONDITIONALLY
+                ! here, discarding the table's physics on every single
+                ! timestep for every near-atmosphere point. For any other
+                ! EOS table, or any density at/above rho_min, falls through
+                ! to the real EOS_Omni_press call on Spritz_eos_handle
+                ! (the actual active EOS), not the separate polytrope handle.
                 keytemp = 1 !don't evolve temperature, we're setting up atmosphere
-                call EOS_Omni_press(Spritz_polytrope_handle,keytemp,Eos_rf_prec,n,&
-                   rho(i,j,k),eps(i,j,k),xtemp,xye,press(i,j,k),keyerr,anyerr)
-                call EOS_Omni_EpsFromPress(Spritz_polytrope_handle,keytemp,Eos_rf_prec,n,&
-                   rho(i,j,k),eps(i,j,k),xtemp,xye,press(i,j,k),eps(i,j,k),keyerr,anyerr)
+                call Spritz_coldtab_press(Spritz_eos_handle,keytemp,Eos_rf_prec,n,&
+                   rho(i,j,k),eps(i,j,k),xtemp,xye,press(i,j,k),keyerr,anyerr,&
+                   Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,&
+                   Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo,&
+                   Spritz_coldtab_gammath,Spritz_coldtab_thfac)
                 keytemp = 0
               endif
 
@@ -411,6 +424,7 @@ subroutine Conservative2Primitive_mhd(CCTK_ARGUMENTS)
                    uxx,uxy,uxz,uyy,uyz,uzz,det, &
                    epsnegative,Spritz_rho_min, &
                    Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo, &
+                   Spritz_coldtab_gammath,Spritz_coldtab_thfac, &
                    Retval)
                    mhd_c2p_mask(i,j,k) = Retval
               if(abs(mhd_c2p_mask(i,j,k)) .gt. 1.0d-8) then
@@ -671,11 +685,19 @@ subroutine Conservative2Primitive_mhd(CCTK_ARGUMENTS)
                    rho(i,j,k),eps(i,j,k),temperature(i,j,k),y_e(i,j,k),&
                    press(i,j,k),keyerr,anyerr)
               else
+                ! Routed through Spritz_coldtab_press (Spritz_coldtab_eos.c),
+                ! same as the pre-check atmosphere branch above -- below the
+                ! cold_tabulated table's rho_min, uses the table's real
+                ! local Gamma instead of the generic K=100/Gamma=2
+                ! polytrope the separate Spritz_polytrope_handle previously
+                ! gave here unconditionally. Falls through to the real
+                ! EOS_Omni_press call for any other EOS table.
                 keytemp = 0
-                call EOS_Omni_press(Spritz_polytrope_handle,keytemp,Eos_rf_prec,n,&
-                   rho(i,j,k),eps(i,j,k),xtemp,xye,press(i,j,k),keyerr,anyerr)
-                call EOS_Omni_EpsFromPress(Spritz_polytrope_handle,keytemp,Eos_rf_prec,n,&
-                   rho(i,j,k),eps(i,j,k),xtemp,xye,press(i,j,k),eps(i,j,k),keyerr,anyerr)
+                call Spritz_coldtab_press(Spritz_eos_handle,keytemp,Eos_rf_prec,n,&
+                   rho(i,j,k),eps(i,j,k),xtemp,xye,press(i,j,k),keyerr,anyerr,&
+                   Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,&
+                   Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo,&
+                   Spritz_coldtab_gammath,Spritz_coldtab_thfac)
               endif
 
               scon(i,j,k,1) = 0.0d0
@@ -2658,6 +2680,7 @@ subroutine Con2PrimPolytype_mhd(CCTK_ARGUMENTS)
                    uxx,uxy,uxz,uyy,uyz,uzz,det, &
                    epsnegative,Spritz_rho_min, &
                    Spritz_coldtab_rhomin,Spritz_coldtab_press_lo,Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo, &
+                   Spritz_coldtab_gammath,Spritz_coldtab_thfac, &
                    retvalcheck)        !mhd_c2p_mask(i,j,k)
               if(abs(retvalcheck) .gt. 1.0d-8 ) then
                                !$OMP CRITICAL

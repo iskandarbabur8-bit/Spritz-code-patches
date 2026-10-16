@@ -32,6 +32,8 @@ using namespace Carpet;
 
     void Spritz_Rho_Minima_Setup_Final_PUGH(CCTK_ARGUMENTS);
 
+    void Spritz_ColdTabCalibration(CCTK_ARGUMENTS);
+
 #ifdef __cplusplus
   } /* extern "C" */
 #endif
@@ -60,6 +62,112 @@ static int Spritz_ReadColdTabRhoMin(const char *table_name, CCTK_REAL *rho_min_o
   if (!found || !(rmin > 0.0)) return 0;
   *rho_min_out = rmin;
   return 1;
+}
+
+/* Parse "GammaTh = <val>" from the same table file, the same way
+ * EOS_Omni_ColdEOSReadTable.F90 does internally (coldeos_gammath is a
+ * private EOS_Omni_Module Fortran variable with no exposed CCTK parameter,
+ * so this is the only way to get the table's own thermal Gamma without
+ * modifying EOS_Omni). Reading it straight from the file guarantees it
+ * always matches whatever EOS_Omni itself is using, with no separate
+ * Spritz-level value that could drift out of sync. */
+static int Spritz_ReadColdTabGammaTh(const char *table_name, CCTK_REAL *gammath_out)
+{
+  FILE *fp = fopen(table_name, "r");
+  if (!fp) return 0;
+
+  char line[512];
+  double gammath = 0.0;
+  int found = 0;
+  while (fgets(line, sizeof(line), fp)) {
+    if (sscanf(line, "GammaTh = %lf", &gammath) == 1) {
+      found = 1;
+      break;
+    }
+  }
+  fclose(fp);
+
+  if (!found) return 0;
+  *gammath_out = gammath;
+  return 1;
+}
+
+ /*@@
+   @routine    Spritz_ColdTabCalibration
+   @desc
+        Calibrate Spritz's own matched-polytrope extrapolation below the
+        cold_tabulated EOS table's own rho_min. EOS_Omni's built-in
+        extrapolation for this table (EOS_Omni_ColdEOSReadTable.F90)
+        hardcodes Gamma=2 regardless of the table's actual local slope;
+        doing our own calibration here lets any Spritz atmosphere-setting
+        code (initial data in Spritz_Prim2ConInitial.c, the con2prim-failure
+        reset in Spritz_Con2PrimM_Noble_pt_EOSOmni.c) use the table's real
+        behavior instead, with zero EOS_Omni calls at the point of use --
+        this one-time calibration, run here before either of those, is the
+        only place that still calls EOS_Omni_press for this purpose.
+
+        Scheduled AT CCTK_INITIAL AFTER HydroBase_Initial BEFORE
+        HydroBase_Prim2ConInitial -- i.e. before Spritz_Prim2ConInitial runs,
+        and well before Spritz_Rho_Minima_Setup_Final (AT
+        CCTK_PostPostInitial), which used to compute this inline and now
+        just reads the already-set Spritz_coldtab_* scalars.
+   @enddesc
+@@*/
+
+void Spritz_ColdTabCalibration(CCTK_ARGUMENTS)
+{
+  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_PARAMETERS;
+
+  if (!CCTK_EQUALS(Spritz_eos_table,"cold_tabulated")) return;
+
+  CCTK_REAL rho_table_min;
+  if (!Spritz_ReadColdTabRhoMin(coldeos_table_name, &rho_table_min))
+    {
+      CCTK_WARN(CCTK_WARN_ABORT, "Spritz: could not read RhoMin from EOS_Omni::coldeos_table_name for the coldtab matched-polytrope calibration.");
+    }
+
+  CCTK_REAL gammath;
+  if (!Spritz_ReadColdTabGammaTh(coldeos_table_name, &gammath))
+    {
+      CCTK_WARN(CCTK_WARN_ABORT, "Spritz: could not read GammaTh from EOS_Omni::coldeos_table_name for the coldtab matched-polytrope calibration.");
+    }
+  const CCTK_REAL thfac = coldeos_use_thermal_gamma_law ? 1.0 : 0.0;
+
+  const CCTK_INT n_calib = 1;
+  CCTK_INT calib_keytemp = 1, calib_keyerr[1], calib_anyerr;
+  CCTK_REAL cxrho[1], cxeps[1], cxpress[1], cxtemp[1], cxye[1];
+  cxtemp[0] = Spritz_hot_atmo_temp;
+  cxye[0]   = Spritz_Y_e_max;
+
+  // First point: the table's own rho_min (gives P_lo, eps_lo).
+  cxrho[0] = rho_table_min;
+  EOS_Omni_press(*Spritz_eos_handle,calib_keytemp,Eos_rf_prec,n_calib,cxrho,cxeps,cxtemp,cxye,cxpress,calib_keyerr,&calib_anyerr);
+  const CCTK_REAL P_lo   = cxpress[0];
+  const CCTK_REAL eps_lo = cxeps[0];
+
+  // Second, nearby point (WhiskyTHC-style two-point secant, see
+  // thcextra/EOS_Barotropic/src/eos_tabulated.cpp) to recover the
+  // table's actual local Gamma there, via the public EOS_Omni_press
+  // API only (EOS_Omni does not expose the per-row Gamma it
+  // interpolates internally).
+  cxrho[0] = 1.1 * rho_table_min;
+  EOS_Omni_press(*Spritz_eos_handle,calib_keytemp,Eos_rf_prec,n_calib,cxrho,cxeps,cxtemp,cxye,cxpress,calib_keyerr,&calib_anyerr);
+  const CCTK_REAL P2 = cxpress[0];
+
+  const CCTK_REAL Gamma_lo = log(P2/P_lo) / log(1.1);
+
+  *Spritz_coldtab_rhomin   = rho_table_min;
+  *Spritz_coldtab_press_lo = P_lo;
+  *Spritz_coldtab_eps_lo   = eps_lo;
+  *Spritz_coldtab_gamma_lo = Gamma_lo;
+  *Spritz_coldtab_gammath  = gammath;
+  *Spritz_coldtab_thfac    = thfac;
+
+  CCTK_VInfo(CCTK_THORNSTRING,
+    "coldtab matched-polytrope calibration: rho_min=%.6e P_lo=%.6e eps_lo=%.6e Gamma_lo=%.6f GammaTh=%.6f thfac=%.1f",
+    (double)rho_table_min, (double)P_lo, (double)eps_lo, (double)Gamma_lo,
+    (double)gammath, (double)thfac);
 }
 
  /*@@
@@ -129,56 +237,11 @@ void Spritz_Rho_Minima_Setup_Final(CCTK_ARGUMENTS)
 
 	}
 
-      // Calibrate Spritz's own matched-polytrope extrapolation below the
-      // cold_tabulated EOS table's own rho_min. EOS_Omni's built-in
-      // extrapolation for this table (EOS_Omni_ColdEOSReadTable.F90)
-      // hardcodes Gamma=2 regardless of the table's actual local slope;
-      // doing our own calibration here lets the con2prim-failure
-      // atmosphere-reset path (Spritz_Con2PrimM_Noble_pt_EOSOmni.c) use the
-      // table's real behavior instead, and to do so without calling into
-      // EOS_Omni at all during that failure path -- this one-time
-      // calibration (run here, at startup, not on failure) is the only
-      // place that still calls EOS_Omni_press for this purpose.
-      if (CCTK_EQUALS(Spritz_eos_table,"cold_tabulated"))
-	{
-	  CCTK_REAL rho_table_min;
-	  if (!Spritz_ReadColdTabRhoMin(coldeos_table_name, &rho_table_min))
-	    {
-	      CCTK_WARN(CCTK_WARN_ABORT, "Spritz: could not read RhoMin from EOS_Omni::coldeos_table_name for the coldtab matched-polytrope calibration.");
-	    }
-
-	  const CCTK_INT n_calib = 1;
-	  CCTK_INT calib_keytemp = 1, calib_keyerr[1], calib_anyerr;
-	  CCTK_REAL cxrho[1], cxeps[1], cxpress[1], cxtemp[1], cxye[1];
-	  cxtemp[0] = Spritz_hot_atmo_temp;
-	  cxye[0]   = Spritz_Y_e_max;
-
-	  // First point: the table's own rho_min (gives P_lo, eps_lo).
-	  cxrho[0] = rho_table_min;
-	  EOS_Omni_press(*Spritz_eos_handle,calib_keytemp,Eos_rf_prec,n_calib,cxrho,cxeps,cxtemp,cxye,cxpress,calib_keyerr,&calib_anyerr);
-	  const CCTK_REAL P_lo   = cxpress[0];
-	  const CCTK_REAL eps_lo = cxeps[0];
-
-	  // Second, nearby point (WhiskyTHC-style two-point secant, see
-	  // thcextra/EOS_Barotropic/src/eos_tabulated.cpp) to recover the
-	  // table's actual local Gamma there, via the public EOS_Omni_press
-	  // API only (EOS_Omni does not expose the per-row Gamma it
-	  // interpolates internally).
-	  cxrho[0] = 1.1 * rho_table_min;
-	  EOS_Omni_press(*Spritz_eos_handle,calib_keytemp,Eos_rf_prec,n_calib,cxrho,cxeps,cxtemp,cxye,cxpress,calib_keyerr,&calib_anyerr);
-	  const CCTK_REAL P2 = cxpress[0];
-
-	  const CCTK_REAL Gamma_lo = log(P2/P_lo) / log(1.1);
-
-	  *Spritz_coldtab_rhomin   = rho_table_min;
-	  *Spritz_coldtab_press_lo = P_lo;
-	  *Spritz_coldtab_eps_lo   = eps_lo;
-	  *Spritz_coldtab_gamma_lo = Gamma_lo;
-
-	  CCTK_VInfo(CCTK_THORNSTRING,
-	    "coldtab matched-polytrope calibration: rho_min=%.6e P_lo=%.6e eps_lo=%.6e Gamma_lo=%.6f",
-	    (double)rho_table_min, (double)P_lo, (double)eps_lo, (double)Gamma_lo);
-	}
+      // Spritz_coldtab_calib (rho_min/press_lo/eps_lo/gamma_lo) is now
+      // computed earlier by Spritz_ColdTabCalibration (AT CCTK_INITIAL,
+      // before HydroBase_Prim2ConInitial, so both Spritz_Prim2ConInitial and
+      // this routine's own Spritz_Cs2_min setup below can use it) --
+      // nothing to do here anymore.
 
       // After this has run once, set the flag so that this does not run again
       flag = false;

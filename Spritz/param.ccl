@@ -58,6 +58,7 @@ EXTENDS KEYWORD temperature_evolution_method ""
 shares: EOS_Omni
 
 USES STRING coldeos_table_name
+USES BOOLEAN coldeos_use_thermal_gamma_law
 
 
 

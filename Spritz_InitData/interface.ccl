@@ -57,7 +57,10 @@ void FUNCTION Prim2ConGen_MHD(CCTK_INT IN handle, \
                            CCTK_REAL IN Bz, CCTK_REAL OUT dBx, \
                            CCTK_REAL OUT dBy, CCTK_REAL OUT dBz, \
                            CCTK_REAL IN alp, CCTK_REAL IN betax, \
-                           CCTK_REAL IN betay, CCTK_REAL IN betaz)
+                           CCTK_REAL IN betay, CCTK_REAL IN betaz, \
+                           CCTK_REAL IN coldtab_rhomin, CCTK_REAL IN coldtab_press_lo, \
+                           CCTK_REAL IN coldtab_eps_lo, CCTK_REAL IN coldtab_gamma_lo, \
+                           CCTK_REAL IN coldtab_gammath, CCTK_REAL IN coldtab_thfac)
 
 USES FUNCTION SpatialDet
 USES FUNCTION Prim2ConPoly

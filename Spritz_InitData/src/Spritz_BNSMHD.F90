@@ -309,7 +309,10 @@ subroutine Spritz_BNSMHD(CCTK_ARGUMENTS)
                    rho(i,j,k),velx(i,j,k),vely(i,j,k),velz(i,j,k), &
                    eps(i,j,k),press(i,j,k),w_lorentz(i,j,k), &
                    Bx(i,j,k),By(i,j,k),Bz(i,j,k),dBx(i,j,k),dBy(i,j,k),dBz(i,j,k),alp(i,j,k), &
-                   betax(i,j,k),betay(i,j,k),betaz(i,j,k))
+                   betax(i,j,k),betay(i,j,k),betaz(i,j,k), &
+                   Spritz_coldtab_rhomin,Spritz_coldtab_press_lo, &
+                   Spritz_coldtab_eps_lo,Spritz_coldtab_gamma_lo, &
+                   Spritz_coldtab_gammath,Spritz_coldtab_thfac)
 
            else if (CCTK_Equals(Spritz_eos_type,"Polytype").eq.1) then
 

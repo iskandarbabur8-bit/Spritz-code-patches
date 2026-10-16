@@ -11,12 +11,25 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "cctk.h"
 #include "cctk_Arguments.h"
 #include "cctk_Parameters.h"
 
 /*#include "EOS_Base.h"*/
+
+/* Spritz_coldtab_eos.c: centralized matched-polytrope replacement for
+ * EOS_Omni_press below the cold_tabulated table's rho_min (real
+ * locally-measured Gamma, not EOS_Omni's own hardcoded Gamma=2). Falls
+ * through to the real EOS_Omni_press call unchanged otherwise. */
+void Spritz_coldtab_press(
+    CCTK_INT handle, CCTK_INT keytemp, CCTK_REAL rf_precision, CCTK_INT npoints,
+    CCTK_REAL *rho, CCTK_REAL *eps, CCTK_REAL *temp, CCTK_REAL *ye,
+    CCTK_REAL *press, CCTK_INT *keyerr, CCTK_INT *anyerr,
+    CCTK_REAL coldtab_rhomin, CCTK_REAL coldtab_press_lo,
+    CCTK_REAL coldtab_eps_lo, CCTK_REAL coldtab_gamma_lo,
+    CCTK_REAL coldtab_gammath, CCTK_REAL coldtab_thfac);
 
 #define MIN(X,Y) ((X)<(Y)?(X):(Y))
 
@@ -222,12 +235,26 @@ void _M_Prim2ConInitial(
 				_M_velz[ijk] = 0.0;
 				_M_temp[ijk] = Spritz_hot_atmo_temp;
 
+				/* Routed through Spritz_coldtab_press (Spritz_coldtab_eos.c),
+				 * the same centralized matched-polytrope wrapper used by
+				 * con2prim/prim2con/reconstruction: below the cold_tabulated
+				 * table's rho_min it uses the table's real local Gamma
+				 * (calibrated once by Spritz_ColdTabCalibration,
+				 * Spritz_Minima.cc) instead of EOS_Omni's own hardcoded
+				 * Gamma=2 -- so the initial-data atmosphere and any later
+				 * con2prim-triggered atmosphere reset agree on eps/press at
+				 * the same density. For any other EOS table, or any density
+				 * at/above rho_min, falls through to the unchanged real
+				 * EOS_Omni_press call. */
 				xtemp[0] = _M_temp[ijk];
-        xrho[0]  = _M_rho[ijk];
-        xye[0]   = _M_Y_e[ijk];
+				xrho[0]  = _M_rho[ijk];
+				xye[0]   = _M_Y_e[ijk];
 				xkeytemp = 1; // in case we are in atmosphere, we already know the temperature. Therefore we want to keep it fixed.
-					EOS_Omni_press(*Spritz_eos_handle,xkeytemp,Eos_rf_prec,nn,xrho,xeps,xtemp,xye,xpress,keyerr,&anyerr);  /*&anyerr*/
-        _M_eps[ijk]   = xeps[0];
+				Spritz_coldtab_press(*Spritz_eos_handle,xkeytemp,Eos_rf_prec,nn,xrho,xeps,xtemp,xye,xpress,keyerr,&anyerr,
+					*Spritz_coldtab_rhomin,*Spritz_coldtab_press_lo,
+					*Spritz_coldtab_eps_lo,*Spritz_coldtab_gamma_lo,
+					*Spritz_coldtab_gammath,*Spritz_coldtab_thfac);
+				_M_eps[ijk]   = xeps[0];
 				_M_press[ijk] = xpress[0];
 			}
 			else {
@@ -252,7 +279,10 @@ void _M_Prim2ConInitial(
 							  _M_velz[ijk], _M_eps[ijk],&_M_press[ijk],
 							  &_M_w_lorentz[ijk], _M_Bx[ijk], _M_By[ijk], _M_Bz[ijk],
 							  &_M_dBx[ijk],&_M_dBy[ijk],&_M_dBz[ijk], _M_alp[ijk],
-							  _M_betax[ijk], _M_betay[ijk], _M_betaz[ijk]);
+							  _M_betax[ijk], _M_betay[ijk], _M_betaz[ijk],
+							  *Spritz_coldtab_rhomin, *Spritz_coldtab_press_lo,
+							  *Spritz_coldtab_eps_lo, *Spritz_coldtab_gamma_lo,
+							  *Spritz_coldtab_gammath, *Spritz_coldtab_thfac);
 					}
 				}
 				else {

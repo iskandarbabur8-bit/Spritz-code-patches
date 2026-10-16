@@ -23,6 +23,7 @@ SRCS = 	Utils.F90 \
 	Spritz_PreLoop.F90 \
 	Spritz_Prim2Con.F90 \
 	Spritz_Prim2ConInitial.c \
+	Spritz_coldtab_eos.c \
 	Spritz_Con2PrimM_Noble_pt_EOSOmni.c \
 	Spritz_Reconstruct.F90 \
 	Spritz_ReconstructPoly.F90 \

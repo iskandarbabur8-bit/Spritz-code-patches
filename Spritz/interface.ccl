@@ -57,7 +57,10 @@ void FUNCTION Prim2ConGen_MHD(CCTK_INT IN handle, \
                            CCTK_REAL IN Bz, CCTK_REAL OUT dBx, \
                            CCTK_REAL OUT dBy, CCTK_REAL OUT dBz, \
                            CCTK_REAL IN alp, CCTK_REAL IN betax, \
-                           CCTK_REAL IN betay, CCTK_REAL IN betaz)
+                           CCTK_REAL IN betay, CCTK_REAL IN betaz, \
+                           CCTK_REAL IN coldtab_rhomin, CCTK_REAL IN coldtab_press_lo, \
+                           CCTK_REAL IN coldtab_eps_lo, CCTK_REAL IN coldtab_gamma_lo, \
+                           CCTK_REAL IN coldtab_gammath, CCTK_REAL IN coldtab_thfac)
 
 void FUNCTION Prim2ConGen_Hot_MHD(CCTK_INT IN handle, CCTK_INT IN Constrain_Temp_now, CCTK_INT IN reflevel, \
                           CCTK_REAL IN x, CCTK_REAL IN y, CCTK_REAL IN z, \
@@ -271,7 +274,9 @@ real Spritz_coldtab_calib type = SCALAR
   Spritz_coldtab_press_lo
   Spritz_coldtab_eps_lo
   Spritz_coldtab_gamma_lo
-} "Matched-polytrope calibration constants for extrapolating cold_tabulated EOS below its table rho_min, avoiding EOS_Omni calls during con2prim-failure atmosphere resets"
+  Spritz_coldtab_gammath
+  Spritz_coldtab_thfac
+} "Matched-polytrope calibration constants for extrapolating cold_tabulated EOS below its table rho_min, avoiding EOS_Omni calls during con2prim-failure atmosphere resets. gammath/thfac add the thermal (Gamma_th) term below rho_min, matching EOS_Omni's own case(5) table-interior formula -- EOS_Omni's own extrapolated branch drops this term entirely, an independent defect from the hardcoded Gamma=2."
 
 
 real dens type = GF Timelevels = 3 tags='ProlongationParameter="HydroBase::prolongation_type" tensortypealias="Scalar" tensorweight=+1.0 interpolator="matter"' "generalized particle number"
